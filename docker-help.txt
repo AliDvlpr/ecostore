@@ -1,0 +1,4 @@
+First check the docker updated to the latest version
+then use this commands:
+1- docker-compose build
+2- docker-compose up

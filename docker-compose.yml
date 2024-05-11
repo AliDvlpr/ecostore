@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+  web:
+    build: .
+    command: >
+      bash -c "python manage.py migrate &&
+           echo \"from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('1111', 'password')\" | python manage.py shell &&
+           python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/code
+    ports:
+      - 8000:8000
+    depends_on:
+      - db
+
+  bot:
+    build: .
+    command: bash -c "while true; do python bot.py; sleep 1; done"
+    volumes:
+      - .:/code
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:

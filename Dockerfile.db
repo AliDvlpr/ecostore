@@ -1,0 +1,8 @@
+# Dockerfile.db
+
+FROM postgres:13
+
+# Set environment variables
+ENV POSTGRES_DB ecodb
+ENV POSTGRES_USER postgres
+ENV POSTGRES_PASSWORD 1q2w3e4r5t6yAli!!
