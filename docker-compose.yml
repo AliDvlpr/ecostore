@@ -11,9 +11,10 @@ services:
   web:
     build: .
     command: >
-      bash -c "python manage.py migrate &&
-           echo \"from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('1111', 'password')\" | python manage.py shell &&
-           python manage.py runserver 0.0.0.0:8000"
+      bash -c "until python manage.py migrate; do
+                 echo 'Waiting for database...'; sleep 2;
+               done &&
+               python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/code
     ports:
