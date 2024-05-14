@@ -1,7 +1,9 @@
 from rest_framework import serializers
+from core.serializers import UserSerializer
 from .models import *
 
 class CustomerSerializer(serializers.ModelSerializer):
+    user = UserSerializer( read_only=True)
     class Meta:
         model = Customer
         fields = '__all__'

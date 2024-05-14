@@ -14,7 +14,7 @@ BOT_USERNAME:Final = "@ecostore_robot"
 # Database connection parameters
 DB_USER = "postgres"
 DB_PASSWORD = "1q2w3e4r5t6yAli!!"
-DB_HOST = "db"
+DB_HOST = "localhost"
 DB_NAME = "ecodb"
 
 store_name = "اکو"
@@ -227,6 +227,11 @@ def handle_response(text: str, user: str) -> str:
                (CONVERSATION_STATE['link'], CONVERSATION_STATE['size'], CONVERSATION_STATE['color'],
                 CONVERSATION_STATE['description'], customer_id))
 
+                order_id = cursor.fetchone()[0]
+
+                cursor.execute("INSERT INTO store_orderstatus (status, status_change, order_id) VALUES (%s, %s, %s)",
+                               ("P", datetime.now(), order_id))
+
             conn.commit()
             cursor.close()
             conn.close()
@@ -237,6 +242,7 @@ def handle_response(text: str, user: str) -> str:
             سایز سفارش: {CONVERSATION_STATE['size']}
             رنگ سفارش: {CONVERSATION_STATE['color']}
             توضیحات: {CONVERSATION_STATE['description']}
+            وضعیت سفارش: در حال انتظار
             """
 
             CONVERSATION_STATE.clear()  # Clear conversation state after completion
@@ -460,7 +466,11 @@ async def handle_callback(update: Update, context: CallbackContext):
             cursor.execute("SELECT * FROM store_order WHERE id = %s", (callback_data[1],))
             order_details = cursor.fetchone()
 
+            cursor.execute("SELECT * FROM store_order WHERE order_id = %s ORDER BY status_change DESC LIMIT 1;", (order_details[0]))
+            order_status = cursor.fetchone()
+
             if order_details:
+
                 # Generate a message with the order details
                 order_message = f"""
                 لینک: {order_details[1]}
@@ -468,6 +478,7 @@ async def handle_callback(update: Update, context: CallbackContext):
                 رنگ: {order_details[3]}
                 توضیحات: {order_details[4]}
                 """
+                print(order_status)
 
                 # Create a button to return to the orders list
                 keyboard = [[InlineKeyboardButton("برگشت به سفارشات من 📋", callback_data="back_to_orders")]]

@@ -46,12 +46,29 @@ class WalletAdmin(admin.ModelAdmin):
     
     customer_name.short_description = 'Customer Name'
 
+class OrderStatusInline(admin.TabularInline):
+    model = OrderStatus
+    extra = 0
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('description', 'link_button', 'size', 'color',  'customer')
+    list_display = ('description', 'link_button', 'size', 'color',  'customer', 'last_status')
     readonly_fields = ['description', 'link_button', 'size', 'color', 'customer']
     exclude = ['link']
-    search_fields = ('customer__name', 'discription')
+    search_fields = ('customer__name', 'description')
+    inlines = [OrderStatusInline]
+
+    def last_status(self, obj):
+        # Get the latest status for this order
+        try:
+        # Get the latest status for this order
+            statuses = OrderStatus.objects.filter(order=obj).order_by('-status_change').first()
+            return statuses.status if statuses else "No status found"
+        except OrderStatus.DoesNotExist:
+            return "No status found"
+
+    last_status.short_description = 'آخرین وضعیت'
+
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
