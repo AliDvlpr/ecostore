@@ -37,6 +37,7 @@ class Order(models.Model):
     description = models.TextField(help_text='Enter the product description')
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=12, decimal_places=0,  null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Order for {self.customer} - {self.description}"

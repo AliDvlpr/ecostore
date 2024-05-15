@@ -1,6 +1,6 @@
 from rest_framework.decorators import action
 from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, RetrieveModelMixin, UpdateModelMixin, ListModelMixin
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from .models import *
@@ -35,13 +35,13 @@ class CustomerViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, Upda
 
 class OrderViewSet(ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
-    serializer_class = OrderSerializer
-
-    def get_permissions(self):
-        if self.request.method in ['PATCH', 'DELETE']:
-            return [IsAdminUser()]
-        return [IsAdminOrReadOnly()]
+    permission_classes = [IsAuthenticated]
     
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return CreateOrderSerializer
+        return OrderSerializer
+
     def get_queryset(self):
         user = self.request.user
 
@@ -51,5 +51,9 @@ class OrderViewSet(ModelViewSet):
         customer_id = Customer.objects.only(
             'id').get(user_id=user.id)
         return Order.objects.filter(customer_id=customer_id)
-    
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        customer = Customer.objects.get(user_id=user.id)
+        serializer.save(customer=customer)
 
