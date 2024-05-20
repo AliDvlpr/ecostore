@@ -55,5 +55,11 @@ class OrderViewSet(ModelViewSet):
     def perform_create(self, serializer):
         user = self.request.user
         customer = Customer.objects.get(user_id=user.id)
-        serializer.save(customer=customer)
+        order = serializer.save(customer=customer)
+        OrderStatus.objects.create(order=order, status=OrderStatus.STATUS_PENDING)
 
+
+class OrderInvoiceViewSet(ModelViewSet):
+    queryset =OrderInvoice.objects.all()
+    serializer_class = OrderInvoiceSerializer
+    permission_classes = [IsAdminOrReadOnly]

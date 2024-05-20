@@ -18,7 +18,7 @@ class Customer(models.Model):
     def order_count(self):
         return self.order_set.count()
 
-    order_count.short_description = 'Order Count'
+    order_count.short_description = 'تعداد سفارشات'
 
 class Wallet(models.Model):
     amount = models.DecimalField(max_digits=12, decimal_places=0, default=0)
@@ -36,7 +36,6 @@ class Order(models.Model):
     color = models.CharField(max_length=50, help_text='Enter the product color')
     description = models.TextField(help_text='Enter the product description')
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
-    price = models.DecimalField(max_digits=12, decimal_places=0,  null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -48,10 +47,10 @@ class Order(models.Model):
     def link_button(self):
         return format_html("<a href='{}' class='button'>Open Link</a>", self.link)
 
-    link_button.short_description = 'Link'
+    link_button.short_description = 'لینک'
 
 class OrderStatus(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.PROTECT, related_name='status')
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='status')
     STATUS_PENDING = 'P'
     STATUS_ACCEPTED = 'A'
     STATUS_COMPLETE = 'C'
@@ -59,26 +58,41 @@ class OrderStatus(models.Model):
     STATUS_SENDING = 'S'
     STATUS_RECEIVED = 'R'
     STATUS_CHOICES = [
-        (STATUS_PENDING, 'Pending'),
-        (STATUS_ACCEPTED, 'Accepted'),
-        (STATUS_COMPLETE, 'Complete'),
-        (STATUS_FAILED, 'Failed'),
-        (STATUS_SENDING, 'Sending'),
-        (STATUS_RECEIVED, 'Received')
+        (STATUS_PENDING, 'در انتظار'),
+        (STATUS_ACCEPTED, 'تایید شده'),
+        (STATUS_COMPLETE, 'پرداخت شده'),
+        (STATUS_FAILED, 'لغو شده'),
+        (STATUS_SENDING, 'ارسال شده'),
+        (STATUS_RECEIVED, 'دریافت شده')
     ]
     status = models.CharField(
         max_length=1, choices=STATUS_CHOICES, default=STATUS_PENDING)
     status_change = models.DateTimeField(auto_now_add=True)
 
-class Transaction(models.Model):
-    ACTION_DEPOSIT = 'D'
-    ACTION_WITHDRAW = 'W'
-    ACTION_CHOICES = [
-        (ACTION_DEPOSIT, 'Deposit'),
-        (ACTION_WITHDRAW, 'Withdraw')
+    class Meta:
+        verbose_name_plural = "وضعیت سفارش"
+
+class OrderInvoice(models.Model):
+    amount = models.DecimalField(max_digits=12, decimal_places=0, default=0)
+    STATUS_PENDING = 'P'
+    STATUS_CONFIRMED = 'C'
+    STATUS_REJECTED = 'R'
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_CONFIRMED, 'Confirmed'),
+        (STATUS_REJECTED, 'Rejected')
     ]
-    action = models.CharField(
-        max_length=1, choices=ACTION_CHOICES, default=ACTION_DEPOSIT)
+    status = models.CharField(
+        max_length=1, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    description = models.TextField(help_text='Enter the product description', null=True, blank=True)
+    photo = models.ImageField(upload_to='invoice/', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "صورت حساب ها"
+
+class Transaction(models.Model):
     amount = models.DecimalField(max_digits=12, decimal_places=0, default=0)
     STATUS_PENDING = 'P'
     STATUS_CONFIRMED = 'C'
@@ -91,9 +105,8 @@ class Transaction(models.Model):
     status = models.CharField(
         max_length=1, choices=STATUS_CHOICES, default=STATUS_PENDING)
     wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, null=False, blank=True)
-    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True)
     photo = models.ImageField(upload_to='receipts/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name_plural = "واریز پول و پرداخت ها"
+        verbose_name_plural = "واریز پول"

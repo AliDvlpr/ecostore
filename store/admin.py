@@ -1,9 +1,8 @@
 from django import forms 
 from django.contrib import admin
-from django.db.models.aggregates import Count
-from django.utils.html import format_html, urlencode
-from django.urls import reverse
+from django.forms import Textarea
 from .models import *
+from bot import send_telegram_message
 # Register your models here.
 class WalletInlineForm(forms.ModelForm):
     class Meta:
@@ -25,26 +24,63 @@ class OrderInline(admin.TabularInline):  # or admin.StackedInline
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
-    list_display = ('name', 'get_phone_number', 'telegram_id', 'order_count')
+    list_display = ('get_name', 'get_phone_number', 'order_count')
     list_per_page = 20
     search_fields = ['name']
     inlines = [OrderInline, WalletInline]
     readonly_fields = ['telegram_id']  # make 'telegram_id' read-only
 
+    def get_name(self, obj):
+        return obj.name
+    get_name.short_description = 'اسم'
+
     def get_phone_number(self, obj):
         return obj.user.phone if obj.user else None
 
-    get_phone_number.short_description = 'Phone Number'
+    get_phone_number.short_description = 'شماره موبایل'
 
 @admin.register(Wallet)
 class WalletAdmin(admin.ModelAdmin):
-    list_display = ('amount', 'customer_name')
-    readonly_fields = ('amount',)
+    list_display = ('get_amount', 'customer_name')
+    readonly_fields = ('amount', 'customer')
+    search_fields = ('customer_name',)
+
+    def get_amount(self, obj):
+        return f"{obj.amount} تومان"
+    get_amount.short_description = 'موجودی'
 
     def customer_name(self, obj):
         return obj.customer.name if obj.customer else None
     
-    customer_name.short_description = 'Customer Name'
+    customer_name.short_description = 'مشتری'
+
+class OrderInvoiceForm(forms.ModelForm):
+    class Meta:
+        model = OrderInvoice
+        fields = '__all__'
+
+class OrderInvoiceInline(admin.TabularInline):
+    model = OrderInvoice
+    form = OrderInvoiceForm
+    fields = ('description', 'amount', 'status')
+    readonly_fields = ('status',)
+    extra = 3
+
+    formfield_overrides = {
+        models.TextField: {'widget': Textarea(attrs={'rows':4, 'cols':40})},
+    }
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "wallet":
+            order_id = request.resolver_match.kwargs.get('object_id')
+            if order_id:
+                order = Order.objects.get(pk=order_id)
+                kwargs["queryset"] = Wallet.objects.filter(customer=order.customer)
+            else:
+                kwargs["queryset"] = Wallet.objects.none()
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    
 
 class OrderStatusInline(admin.TabularInline):
     model = OrderStatus
@@ -52,35 +88,77 @@ class OrderStatusInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('description', 'link_button', 'size', 'color',  'customer', 'last_status')
-    readonly_fields = ['description', 'link_button', 'size', 'color', 'customer']
+    list_display = ('get_description', 'link_button', 'get_size', 'get_color', 'get_customer', 'last_status')
+    readonly_fields = ['description', 'link_button', 'size', 'color' ,'customer']
     exclude = ['link']
     search_fields = ('customer__name', 'description')
-    inlines = [OrderStatusInline]
+    inlines = [OrderInvoiceInline ,OrderStatusInline]
+
+    def get_description(self, obj):
+        return obj.description
+    get_description.short_description = 'توضیحات'
+
+    def get_size(self, obj):
+        return obj.size
+    get_size.short_description = 'سایز'
+
+    def get_color(self, obj):
+        return obj.color
+    get_color.short_description = 'رنگ'
+
+    def get_customer(self, obj):
+        return obj.customer
+    get_customer.short_description = 'مشتری'
 
     def last_status(self, obj):
-        # Get the latest status for this order
         try:
-        # Get the latest status for this order
+            # Get the latest status for this order
             statuses = OrderStatus.objects.filter(order=obj).order_by('-status_change').first()
-            return statuses.status if statuses else "No status found"
+            if statuses:
+                # Use get_status_display() to get the human-readable value of the status
+                return statuses.get_status_display()
+            else:
+                return "No status found"
         except OrderStatus.DoesNotExist:
             return "No status found"
+        
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        
+        # Check if we're dealing with the OrderInvoiceInline formset
+        if formset.model == OrderInvoice:
+            order = form.instance
+            # Check if this is the first invoice for the order
+            if not OrderInvoice.objects.filter(order=order).exists():
+                # Create a new OrderStatus instance with status 'A' ('تایید شده')
+                OrderStatus.objects.create(order=order, status='A')
+
+                # Check if the customer has a telegram_id
+                if order.customer.telegram_id:
+                    # Construct the message you want to send
+                    message = f"سلام، {order.customer.name}, سفارش شما با کد {order.pk} تایید شده است. جهت پرداخت میتوانید اطلاعات سفارش مورد نظر را چک کنید"
+                    # Call the function to send the message
+                    send_telegram_message(chat_id=order.customer.telegram_id, text=message)
+        
+        # Save the instances and the formset
+        for instance in instances:
+            instance.save()
+        formset.save_m2m()
+
 
     last_status.short_description = 'آخرین وضعیت'
 
-
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ('amount','action', 'status', 'wallet','created_at')
-    list_filter = ('action', 'status')
+    list_display = ('amount', 'status', 'wallet','created_at')
+    list_filter = ('status',)
     search_fields = ('customer__name',)  # You can customize this based on your requirements
 
 
     # Customize the form fields and layout if needed
     fieldsets = (
         (None, {
-            'fields': ('action', 'amount', 'status', 'order', 'wallet','created_at')
+            'fields': ('amount', 'status', 'order', 'wallet','created_at')
         }),
         ('عکس رسید (برای افزایش موجودی کیف پول)', {
             'fields': ('photo',),
@@ -89,7 +167,7 @@ class TransactionAdmin(admin.ModelAdmin):
     )
 
     # If you want to display read-only fields in the admin
-    readonly_fields = ('action', 'created_at')
+    readonly_fields = ('created_at',)
 
     # Customize ordering if needed
     ordering = ('-created_at',)
