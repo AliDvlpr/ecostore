@@ -13,8 +13,9 @@ BOT_USERNAME:Final = "@ecostore_robot"
 # Database connection parameters
 DB_USER = "root"
 DB_PASSWORD = "RPY0mHYecwe7imLXRjE7MWfM"
-DB_HOST = "ecodb"
+DB_HOST = "monte-rosa.liara.cloud"
 DB_NAME = "ecodb"
+DB_PORT ="33759"
 
 store_name = "اکو"
 # Define a dictionary to keep track of conversation states for each user
@@ -39,7 +40,7 @@ status_codes = {
 ## Command Handlers ##
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Connect to the PostgreSQL database
-    conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME)
+    conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME, port=DB_PORT)
     try:
         # Create a cursor object to execute SQL queries
         cursor = conn.cursor()
@@ -88,7 +89,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     if conversation_states.get(user_id) == 'add_funds':
-        conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME)
+        conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME, port=DB_PORT)
         try:
             cursor = conn.cursor()
             cursor.execute("SELECT id FROM store_customer WHERE telegram_id = %s", (str(user_id),))
@@ -138,7 +139,7 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         phone_number = update.message.contact.phone_number
 
         # Connect to the PostgreSQL database
-        conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME)
+        conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME, port=DB_PORT)
         try:
             # Create a cursor object to execute SQL queries
             cursor = conn.cursor()
@@ -219,7 +220,7 @@ def handle_response(text: str, user: str) -> str:
         
         # Establish connection to the PostgreSQL database
         try:
-            conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME)
+            conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME, port=DB_PORT)
             cursor = conn.cursor()
 
             cursor.execute("SELECT EXISTS(SELECT 1 FROM store_customer WHERE telegram_id = %s)", (str(user),))
@@ -295,7 +296,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
         try:
             # Establish connection to the PostgreSQL database
-            conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME)
+            conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME, port=DB_PORT)
             cursor = conn.cursor()
 
             cursor.execute("SELECT EXISTS(SELECT 1 FROM store_customer WHERE telegram_id = %s)", (str(user),))
@@ -349,7 +350,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         try:
             # Establish connection to the PostgreSQL database
-            conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME)
+            conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME, port=DB_PORT)
             cursor = conn.cursor()
 
             cursor.execute("SELECT EXISTS(SELECT 1 FROM store_customer WHERE telegram_id = %s)", (str(user),))
@@ -402,7 +403,7 @@ async def handle_callback(update: Update, context: CallbackContext):
         user = str(query.from_user.id)
         try:
             # Establish connection to the PostgreSQL database
-            conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME)
+            conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME, port=DB_PORT)
             cursor = conn.cursor()
 
             cursor.execute("SELECT EXISTS(SELECT 1 FROM store_customer WHERE telegram_id = %s)", (str(user),))
@@ -455,7 +456,7 @@ async def handle_callback(update: Update, context: CallbackContext):
 
         try:
             # Establish connection to the PostgreSQL database
-            conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME)
+            conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME, port=DB_PORT)
             cursor = conn.cursor()
 
             cursor.execute("SELECT EXISTS(SELECT 1 FROM store_customer WHERE telegram_id = %s)", (str(user),))
@@ -513,7 +514,7 @@ async def handle_callback(update: Update, context: CallbackContext):
 
     elif callback_data[0] == 'confirm_cancel':
         try:
-            conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME)
+            conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME, port=DB_PORT)
             cursor = conn.cursor()
 
             cursor.execute("INSERT INTO store_orderstatus (status, status_change, order_id) VALUES (%s, NOW(), %s)",
@@ -537,7 +538,7 @@ async def handle_callback(update: Update, context: CallbackContext):
             user = str(query.from_user.id)
             try:
                 # Fetch the user's id from the database
-                conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME)
+                conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME, port=DB_PORT)
                 cursor = conn.cursor()
 
                 cursor.execute("SELECT id FROM store_customer WHERE telegram_id = %s", (user,))
@@ -580,7 +581,7 @@ async def handle_callback(update: Update, context: CallbackContext):
         user = str(query.from_user.id)
         try:
             # Fetch the user's id from the database
-            conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME)
+            conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME, port=DB_PORT)
             cursor = conn.cursor()
 
             cursor.execute("SELECT id FROM store_customer WHERE telegram_id = %s", (user,))
@@ -624,7 +625,7 @@ async def handle_callback(update: Update, context: CallbackContext):
     else:
         try:
             # Establish connection to the PostgreSQL database
-            conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME)
+            conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME, port=DB_PORT)
             cursor = conn.cursor()
 
             # Fetch the details of the selected order from the database
