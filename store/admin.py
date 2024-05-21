@@ -138,7 +138,6 @@ class OrderAdmin(admin.ModelAdmin):
                     # Construct the message you want to send
                     message = f"سلام، {order.customer.name}, سفارش شما با کد {order.pk} تایید شده است. جهت پرداخت میتوانید اطلاعات سفارش مورد نظر را چک کنید"
                     # Call the function to send the message
-                    send_telegram_message(chat_id=order.customer.telegram_id, text=message)
         
         # Save the instances and the formset
         for instance in instances:
