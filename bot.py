@@ -11,11 +11,11 @@ TOKEN:Final = "6039470513:AAEpKOCjc9laQ6bWcYuQNRyeC5q12CBM1iM"
 BOT_USERNAME:Final = "@ecostore_robot"
 
 # Database connection parameters
-DB_USER = "root"
-DB_PASSWORD = "RPY0mHYecwe7imLXRjE7MWfM"
-DB_HOST = "monte-rosa.liara.cloud"
-DB_NAME = "postgres"
-DB_PORT ="33759"
+DB_USER = "postgres"
+DB_PASSWORD = "1q2w3e4r5t6yAli!!"
+DB_HOST = "db"
+DB_NAME = "ecodb"
+DB_PORT ="5432"
 
 store_name = "اکو"
 # Define a dictionary to keep track of conversation states for each user

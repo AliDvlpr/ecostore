@@ -1,24 +1,42 @@
 version: '3.8'
 
 services:
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   web:
     build: .
     command: >
       bash -c "until python manage.py migrate; do
                  echo 'Waiting for database...'; sleep 2;
                done &&
-               python manage.py runserver 0.0.0.0:8000"
+               python manage.py runserver 0.0.0.0:8000 &&
+               python check_or_create_superuser.py"
     volumes:
       - .:/code
     ports:
       - 8000:8000
-    environment:
-      - DATABASE_URL=postgresql://root:RPY0mHYecwe7imLXRjE7MWfM@monte-rosa.liara.cloud:33759/postgres
+    depends_on:
+      db:
+        condition: service_healthy
 
   bot:
     build: .
     command: bash -c "while true; do python bot.py; sleep 1; done"
     volumes:
       - .:/code
-    environment:
-      - DATABASE_URL=postgresql://root:RPY0mHYecwe7imLXRjE7MWfM@monte-rosa.liara.cloud:33759/postgres
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

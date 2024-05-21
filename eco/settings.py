@@ -85,11 +85,11 @@ WSGI_APPLICATION = "eco.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',  # Your database name
-        'USER': 'root',  # Your database user
-        'PASSWORD': 'RPY0mHYecwe7imLXRjE7MWfM',  # Your database password
-        'HOST': 'monte-rosa.liara.cloud',  # Host where PostgreSQL is running
-        'PORT': '33759',  # Leave empty for default port (5432)
+        'NAME': 'ecodb',  # Your database name
+        'USER': 'postgres',  # Your database user
+        'PASSWORD': '1q2w3e4r5t6yAli!!',  # Your database password
+        'HOST': 'db',  # Host where PostgreSQL is running
+        'PORT': '5432',  # Leave empty for default port (5432)
     }
 }
 
