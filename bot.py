@@ -13,9 +13,9 @@ BOT_USERNAME:Final = "@ecostore_robot"
 # Database connection parameters
 DB_USER = "root"
 DB_PASSWORD = "RPY0mHYecwe7imLXRjE7MWfM"
-DB_HOST = "monte-rosa.liara.cloud"
+DB_HOST = "ecodb"
 DB_NAME = "postgres"
-DB_PORT ="33759"
+DB_PORT ="5432"
 
 store_name = "اکو"
 # Define a dictionary to keep track of conversation states for each user

@@ -88,8 +88,8 @@ DATABASES = {
         'NAME': 'postgres',  # Your database name
         'USER': 'root',  # Your database user
         'PASSWORD': 'RPY0mHYecwe7imLXRjE7MWfM',  # Your database password
-        'HOST': 'monte-rosa.liara.cloud',  # Host where PostgreSQL is running
-        'PORT': '33759',  # Leave empty for default port (5432)
+        'HOST': 'ecodb',  # Host where PostgreSQL is running
+        'PORT': '5432',  # Leave empty for default port (5432)
     }
 }
 
