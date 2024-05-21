@@ -14,7 +14,7 @@ BOT_USERNAME:Final = "@ecostore_robot"
 DB_USER = "root"
 DB_PASSWORD = "RPY0mHYecwe7imLXRjE7MWfM"
 DB_HOST = "monte-rosa.liara.cloud"
-DB_NAME = "ecodb"
+DB_NAME = "postgres"
 DB_PORT ="33759"
 
 store_name = "اکو"

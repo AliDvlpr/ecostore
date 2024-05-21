@@ -85,7 +85,7 @@ WSGI_APPLICATION = "eco.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'ecodb',  # Your database name
+        'NAME': 'postgres',  # Your database name
         'USER': 'root',  # Your database user
         'PASSWORD': 'RPY0mHYecwe7imLXRjE7MWfM',  # Your database password
         'HOST': 'monte-rosa.liara.cloud',  # Host where PostgreSQL is running
