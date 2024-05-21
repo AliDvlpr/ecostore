@@ -43,12 +43,3 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.phone
-    
-
-try:
-    user = User.objects.get(phone='1111')
-    # User exists
-except User.DoesNotExist:
-    # User does not exist
-    # Create a superuser with phone number 1111 and 'password' as the password
-    User.objects.create_superuser(phone='1111', password='password')
