@@ -4,17 +4,16 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 import psycopg2
 from psycopg2 import Error
 from datetime import datetime
-import os
-from datetime import datetime
+from decimal import Decimal
 
 # Bot connection parameters
-TOKEN:Final = "7143272077:AAH34BsZgIYUcIp-hu1uwtYCLaTvDrxR6lE"
+TOKEN:Final = "6039470513:AAEpKOCjc9laQ6bWcYuQNRyeC5q12CBM1iM"
 BOT_USERNAME:Final = "@ecostore_robot"
 
 # Database connection parameters
-DB_USER = "postgres"
-DB_PASSWORD = "1q2w3e4r5t6yAli!!"
-DB_HOST = "db"
+DB_USER = "root"
+DB_PASSWORD = "RPY0mHYecwe7imLXRjE7MWfM"
+DB_HOST = "ecodb"
 DB_NAME = "ecodb"
 
 store_name = "اکو"
@@ -419,7 +418,24 @@ async def handle_callback(update: Update, context: CallbackContext):
         
                 if orders:
                     # Create a list of inline keyboard buttons for each order
-                    keyboard = [[InlineKeyboardButton(order[1], callback_data=f"order:{order[0]}")] for order in orders]
+                    keyboard = []
+                    for order in orders:
+                        # Check the latest status of the order
+                        cursor.execute("""
+                            SELECT status
+                            FROM store_orderstatus
+                            WHERE order_id = %s
+                            ORDER BY status_change DESC
+                            LIMIT 1
+                        """, (order[0],))
+                        latest_status = cursor.fetchone()
+        
+                        # Add a red X emoji to the order's name if the latest status is 'F'
+                        order_name = ' ❌' + order[1] if latest_status and latest_status[0] == 'F' else order[1]
+        
+                        # Append the modified order name with the red X emoji to the keyboard
+                        keyboard.append([InlineKeyboardButton(order_name, callback_data=f"order:{order[0]}")])
+
                     reply_markup = InlineKeyboardMarkup(keyboard)
                     await query.message.edit_text('لیست سفارشات شما:', reply_markup=reply_markup)
                 else:
@@ -517,6 +533,94 @@ async def handle_callback(update: Update, context: CallbackContext):
             # Close cursor and connection
             cursor.close()
             conn.close()
+    elif callback_data[0] == 'pay_order':
+            user = str(query.from_user.id)
+            try:
+                # Fetch the user's id from the database
+                conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME)
+                cursor = conn.cursor()
+
+                cursor.execute("SELECT id FROM store_customer WHERE telegram_id = %s", (user,))
+                customer_id = cursor.fetchone()[0]
+
+                # Check if the user has a wallet
+                cursor.execute("SELECT id, amount FROM store_wallet WHERE customer_id = %s", (customer_id,))
+                wallet = cursor.fetchone()
+
+                if wallet:
+                    keyboard = [[InlineKeyboardButton(f"پرداخت از طریق کیف پول", callback_data=f"confirm_payment:{callback_data[1]}")],
+                        [InlineKeyboardButton("افزایش موجودی", callback_data="add_funds")]]
+                    reply_markup = InlineKeyboardMarkup(keyboard)
+                    await query.message.edit_text(f"""
+                                                موجودی کیف پول شما 💰: {wallet[1]}
+                                                سفارش شما {callback_data[2]} تومان است.
+                                                """, reply_markup=reply_markup)
+
+                else:
+                    # If wallet does not exist, create a new one for the user
+                    cursor.execute("INSERT INTO store_wallet (customer_id, amount) VALUES (%s, %s) RETURNING id",(customer_id, 0))
+                    new_wallet = cursor.fetchone()[0]
+                    conn.commit()
+                    keyboard = [[InlineKeyboardButton(f"پرداخت از طریق کیف پول", callback_data=f"confirm_payment:{callback_data[1]}")],
+                        [InlineKeyboardButton("افزایش موجودی", callback_data="add_funds")]]
+                    reply_markup = InlineKeyboardMarkup(keyboard)
+                    await query.message.edit_text(f"""
+                                                موجودی کیف پول شما 💰: {wallet[1]}
+                                                سفارش شما {callback_data[2]} تومان است.
+                                                """, reply_markup=reply_markup)
+            except Error as e:
+                print("Error while connecting to PostgreSQL", e)
+                await query.message.edit_text("ببخشید، موقع دریافت اطلاعات به مشکل خوردیم. لطفا دوباره امتحان کنید.")
+
+            finally:
+                # Close cursor and connection
+                cursor.close()
+                conn.close()
+    elif callback_data[0] == 'confirm_payment':
+        user = str(query.from_user.id)
+        try:
+            # Fetch the user's id from the database
+            conn = psycopg2.connect(user=DB_USER, password=DB_PASSWORD, host=DB_HOST, database=DB_NAME)
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT id FROM store_customer WHERE telegram_id = %s", (user,))
+            customer_id = cursor.fetchone()[0]
+
+            # Check if the user has a wallet
+            cursor.execute("SELECT id, amount FROM store_wallet WHERE customer_id = %s", (customer_id,))
+            wallet = cursor.fetchone()
+
+            cursor.execute("SELECT amount FROM store_orderinvoice WHERE order_id = %s AND status = %s", (callback_data[1],"P"))
+            order_invoices = cursor.fetchall()
+            total_amount = sum(amount[0] for amount in order_invoices)
+
+            new_wallet = Decimal(wallet[1])-Decimal(total_amount)
+
+            if new_wallet >= 0:
+                cursor.execute("UPDATE store_wallet SET amount = %s WHERE id = %s", (str(new_wallet), wallet[0]))
+
+                cursor.execute("UPDATE store_orderinvoice SET status = %s where order_id = %s", ("C", callback_data[1]))
+
+                conn.commit()
+                # Define the base keyboard with the 'back to orders' button
+                keyboard = [[InlineKeyboardButton("برگشت به سفارشات من 📋", callback_data="back_to_orders")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                # Edit the original message with the order details and the button
+                await query.message.edit_text("پرداخت موفقیت آمیز بود.", reply_markup=reply_markup)
+            else:
+                keyboard = [[InlineKeyboardButton("برگشت به سفارشات من 📋", callback_data="back_to_orders")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                await query.message.edit_text("موجودی کیف پول شما کافی نیست. لطفا موجودی کیف پول خود را افزایش دهید.", reply_markup=reply_markup)
+
+        except Error as e:
+            print("Error while connecting to PostgreSQL", e)
+            await query.message.edit_text("ببخشید، موقع دریافت اطلاعات به مشکل خوردیم. لطفا دوباره امتحان کنید.")
+
+        finally:
+            # Close cursor and connection
+            cursor.close()
+            conn.close()
+
     else:
         try:
             # Establish connection to the PostgreSQL database
@@ -531,48 +635,68 @@ async def handle_callback(update: Update, context: CallbackContext):
             order_status = cursor.fetchone()
 
 
-            cursor.execute("SELECT amount FROM store_orderinvoice WHERE order_id = %s", (order_details[0],))
+            cursor.execute("SELECT amount FROM store_orderinvoice WHERE order_id = %s AND status = %s", (order_details[0],"P"))
             order_invoices = cursor.fetchall()
             # مجموع مبلغ‌ها را محاسبه کنید
             
             if order_details:
-
                 # Assuming order_status[1] contains the status code
                 status_text = status_codes.get(order_status[1], 'نامشخص')  # Default to 'نامشخص' if status code is not found
                 total_amount = sum(amount[0] for amount in order_invoices)
 
-                # نمایش مجموع مبلغ‌ها یا پیام "هنوز هزینه‌ای ثبت نشده است"
-                if total_amount:
+                # Define the base keyboard with the 'back to orders' button
+                keyboard = [[InlineKeyboardButton("برگشت به سفارشات من 📋", callback_data="back_to_orders")]]
+
+                # Check if the order status is 'F'
+                if order_status[1] == 'F':
                     order_message = f"""
                         لینک: {order_details[1]}
                         سایز: {order_details[2]}
                         رنگ: {order_details[3]}
                         توضیحات: {order_details[4]}
                         وضعیت سفارش: {status_text}
-                        مجموع هزینه ها: {total_amount}
                         """
-                    # Create a button to return to the orders list
-                    keyboard = [[InlineKeyboardButton("برگشت به سفارشات من 📋", callback_data="back_to_orders")],
-                        #[InlineKeyboardButton("ویرایش سفارش 📝", callback_data="edit_order")],
-                        [InlineKeyboardButton("لغو سفارش 🚫", callback_data=f"cancel_order:{callback_data[1]}")],
-                        [InlineKeyboardButton("پرداخت سفارش 💳", callback_data=f"pay_order:{callback_data[1]}")]]
                 else:
-                    order_message = f"""
-                        لینک: {order_details[1]}
-                        سایز: {order_details[2]}
-                        رنگ: {order_details[3]}
-                        توضیحات: {order_details[4]}
-                        وضعیت سفارش: {status_text}
-                        هنوز هزینه‌ای ثبت نشده است
+                    # نمایش مجموع مبلغ‌ها یا پیام "هنوز هزینه‌ای ثبت نشده است"
+                    if total_amount:
+                        if total_amount >= 0:
+                            order_message = f"""
+                            لینک: {order_details[1]}
+                            سایز: {order_details[2]}
+                            رنگ: {order_details[3]}
+                            توضیحات: {order_details[4]}
+                            وضعیت سفارش: {status_text}
+                            مجموع هزینه ها: {total_amount}
+                            """
+                            # Add buttons for actions other than 'back to orders'
+                            keyboard.extend([
+                                [InlineKeyboardButton("لغو سفارش 🚫", callback_data=f"cancel_order:{callback_data[1]}")],
+                                [InlineKeyboardButton("پرداخت سفارش 💳", callback_data=f"pay_order:{callback_data[1]}:{total_amount}")]
+                            ])
+                        else:
+                            order_message = f"""
+                            لینک: {order_details[1]}
+                            سایز: {order_details[2]}
+                            رنگ: {order_details[3]}
+                            توضیحات: {order_details[4]}
+                            وضعیت سفارش: {status_text}
+                            مجموع هزینه های پرداخت نشده: {total_amount}
+                            """
+                    else:
+                        order_message = f"""
+                            لینک: {order_details[1]}
+                            سایز: {order_details[2]}
+                            رنگ: {order_details[3]}
+                            توضیحات: {order_details[4]}
+                            وضعیت سفارش: {status_text}
+                            هنوز هزینه‌ای ثبت نشده است
                         """
-                    # Create a button to return to the orders list
-                    keyboard = [[InlineKeyboardButton("برگشت به سفارشات من 📋", callback_data="back_to_orders")],
-                        #[InlineKeyboardButton("ویرایش سفارش 📝", callback_data="edit_order")],
-                        [InlineKeyboardButton("لغو سفارش 🚫", callback_data=f"cancel_order:{callback_data[1]}")]]
 
-                
+                        keyboard.extend([
+                            [InlineKeyboardButton("لغو سفارش 🚫", callback_data=f"cancel_order:{callback_data[1]}")]
+                        ])
+
                 reply_markup = InlineKeyboardMarkup(keyboard)
-
                 # Edit the original message with the order details and the button
                 await query.message.edit_text(order_message, reply_markup=reply_markup)
             else:

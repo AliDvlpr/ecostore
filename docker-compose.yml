@@ -1,13 +1,6 @@
 version: '3.8'
 
 services:
-  db:
-    build:
-      context: .
-      dockerfile: Dockerfile.db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-
   web:
     build: .
     command: >

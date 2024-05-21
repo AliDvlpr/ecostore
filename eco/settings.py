@@ -86,9 +86,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'ecodb',  # Your database name
-        'USER': 'postgres',  # Your database user
-        'PASSWORD': '1q2w3e4r5t6yAli!!',  # Your database password
-        'HOST': 'db',  # Host where PostgreSQL is running
+        'USER': 'root',  # Your database user
+        'PASSWORD': 'RPY0mHYecwe7imLXRjE7MWfM',  # Your database password
+        'HOST': 'ecodb',  # Host where PostgreSQL is running
         'PORT': '5432',  # Leave empty for default port (5432)
     }
 }
