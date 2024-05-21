@@ -13,7 +13,7 @@ services:
     ports:
       - 8000:8000
     environment:
-      - DATABASE_URL=postgresql://root:RPY0mHYecwe7imLXRjE7MWfM@ecodb:5432/postgres
+      - DATABASE_URL=postgresql://root:RPY0mHYecwe7imLXRjE7MWfM@monte-rosa.liara.cloud:33759/postgres
 
   bot:
     build: .
@@ -21,4 +21,4 @@ services:
     volumes:
       - .:/code
     environment:
-      - DATABASE_URL=postgresql://root:RPY0mHYecwe7imLXRjE7MWfM@ecodb:5432/postgres
+      - DATABASE_URL=postgresql://root:RPY0mHYecwe7imLXRjE7MWfM@monte-rosa.liara.cloud:33759/postgres
