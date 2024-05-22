@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.forms import Textarea
 from .models import *
 from bot import send_telegram_message
+import jdatetime
 # Register your models here.
 class WalletInlineForm(forms.ModelForm):
     class Meta:
@@ -19,7 +20,7 @@ class WalletInline(admin.StackedInline):
 class OrderInline(admin.TabularInline):  # or admin.StackedInline
     model = Order
     extra = 0
-    readonly_fields = ['link_button', 'size', 'color', 'description', 'customer']
+    readonly_fields = ['link_button', 'size', 'color', 'quantity','description', 'customer']
     exclude = ['link']
 
 @admin.register(Customer)
@@ -39,14 +40,18 @@ class CustomerAdmin(admin.ModelAdmin):
 
     get_phone_number.short_description = 'شماره موبایل'
 
+
 @admin.register(Wallet)
 class WalletAdmin(admin.ModelAdmin):
     list_display = ('get_amount', 'customer_name')
-    readonly_fields = ('amount', 'customer')
+    readonly_fields = ('get_amount', 'customer_name')
     search_fields = ('customer_name',)
+    exclude=('amount', 'customer')
+
+
 
     def get_amount(self, obj):
-        return f"{obj.amount} تومان"
+        return f"{obj.amount:,} تومان"
     get_amount.short_description = 'موجودی'
 
     def customer_name(self, obj):
@@ -62,9 +67,9 @@ class OrderInvoiceForm(forms.ModelForm):
 class OrderInvoiceInline(admin.TabularInline):
     model = OrderInvoice
     form = OrderInvoiceForm
-    fields = ('description', 'amount', 'status')
+    fields = ('description', 'amount', 'photo','status')
     readonly_fields = ('status',)
-    extra = 3
+    extra = 0
 
     formfield_overrides = {
         models.TextField: {'widget': Textarea(attrs={'rows':4, 'cols':40})},
@@ -88,7 +93,7 @@ class OrderStatusInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('get_description', 'link_button', 'get_size', 'get_color', 'get_customer', 'last_status')
+    list_display = ('get_description', 'link_button', 'get_size', 'get_color', 'get_quantity', 'get_customer', 'last_status')
     readonly_fields = ['description', 'link_button', 'size', 'color' ,'customer']
     exclude = ['link']
     search_fields = ('customer__name', 'description')
@@ -105,6 +110,10 @@ class OrderAdmin(admin.ModelAdmin):
     def get_color(self, obj):
         return obj.color
     get_color.short_description = 'رنگ'
+
+    def get_quantity(self,obj):
+        return obj.quantity
+    get_quantity = 'تعداد'
 
     def get_customer(self, obj):
         return obj.customer
@@ -149,21 +158,28 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ('amount', 'status', 'wallet','created_at')
+    list_display = ('get_amount', 'get_status', 'get_wallet','get_date')
     list_filter = ('status',)
     search_fields = ('customer__name',)  # You can customize this based on your requirements
 
+    def get_amount(self, obj):
+        return f"{obj.amount:,} تومان"
+    get_amount.short_description = 'میزان واریز'
 
-    # Customize the form fields and layout if needed
-    fieldsets = (
-        (None, {
-            'fields': ('amount', 'status', 'order', 'wallet','created_at')
-        }),
-        ('عکس رسید (برای افزایش موجودی کیف پول)', {
-            'fields': ('photo',),
-            'classes': ('collapse',)  # Optional, collapses this section by default
-        }),
-    )
+    def get_wallet(self, obj):
+        return obj.wallet
+    get_wallet.short_description = 'کیف پول'
+
+    def get_status(self, obj):
+        return obj.status
+    get_status.short_description = 'وضعیت'
+
+    def get_date(self, obj):
+        # Assuming 'created_at' is a DateTimeField
+        persian_date = jdatetime.date.fromgregorian(date=obj.created_at)
+        persian_time = obj.created_at.strftime("%H:%M")  # Format time as HH:MM
+        return format_html("تاریخ {} - ساعت {}", persian_date.strftime("%Y/%m/%d"), persian_time)
+    get_date.short_description = 'تاریخ ایجاد'
 
     # If you want to display read-only fields in the admin
     readonly_fields = ('created_at',)

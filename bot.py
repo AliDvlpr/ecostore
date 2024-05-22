@@ -7,13 +7,13 @@ from datetime import datetime
 from decimal import Decimal
 
 # Bot connection parameters
-TOKEN:Final = "6039470513:AAEpKOCjc9laQ6bWcYuQNRyeC5q12CBM1iM"
+TOKEN:Final = "7143272077:AAH34BsZgIYUcIp-hu1uwtYCLaTvDrxR6lE"
 BOT_USERNAME:Final = "@ecostore_robot"
 
 # Database connection parameters
 DB_USER = "postgres"
 DB_PASSWORD = "1q2w3e4r5t6yAli!!"
-DB_HOST = "db"
+DB_HOST = "localhost"
 DB_NAME = "ecodb"
 DB_PORT ="5432"
 
@@ -116,8 +116,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await file_path.download_to_drive(download_path)
 
                 # Insert a new record into store_transaction
-                cursor.execute("INSERT INTO store_transaction (action, amount, status, photo, wallet_id, created_at) VALUES (%s, %s, %s, %s, %s, NOW())",
-                               ('D', 0, 'P', db_path, wallet_id))
+                cursor.execute("INSERT INTO store_transaction (amount, status, photo, wallet_id, created_at) VALUES ( %s, %s, %s, %s, NOW())",
+                               (0, 'P', db_path, wallet_id))
                 conn.commit()  # Commit the transaction
 
                 # Send a confirmation message
@@ -147,7 +147,10 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Check if the user exists in the core_user table
             cursor.execute("SELECT id FROM core_user WHERE phone = %s", (phone_number,))
             user = cursor.fetchone()
-
+            # Extract user information
+            tuser = update.message.from_user
+            telegram_id = str(tuser.id)
+            name = f"{tuser.first_name} {tuser.last_name}" if tuser.last_name else tuser.first_name
             if user is None:
                 # User does not exist, create a new user
                 cursor.execute(
@@ -155,21 +158,20 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     (phone_number, '', phone_number, True, datetime.now(), False, False, '', '',  '', '')
                 )
                 user_id = cursor.fetchone()[0]
+                # Insert the new user into the store_customer table
+                cursor.execute("INSERT INTO store_customer (name, telegram_id, user_id) VALUES (%s, %s, %s) RETURNING id", (name, telegram_id, user_id))
+                customer_id = cursor.fetchone()[0]
+                cursor.execute("INSERT INTO store_wallet (customer_id, amount) VALUES (%s, %s) RETURNING id",(customer_id, 0))
                 conn.commit()  # Commit the transaction
             else:
                 # User exists, get the user id
                 user_id = user[0]
+                cursor.execute("UPDATE store_customer SET name = %s, telegram_id = %s WHERE user_id = %s RETURNING id", (name, telegram_id, user_id))
+                conn.commit()
+                customer_id = cursor.fetchone()[0]
+                cursor.execute("INSERT INTO store_wallet (customer_id, amount) VALUES (%s, %s) RETURNING id",(customer_id, 0))
+                conn.commit()
 
-            # Extract user information
-            user = update.message.from_user
-            telegram_id = str(user.id)
-            name = f"{user.first_name} {user.last_name}" if user.last_name else user.first_name
-
-            # Insert the new user into the store_customer table
-            cursor.execute("INSERT INTO store_customer (name, telegram_id, user_id) VALUES (%s, %s, %s) RETURNING id", (name, telegram_id, user_id))
-            customer_id = cursor.fetchone()[0]
-            cursor.execute("INSERT INTO store_wallet (customer_id, amount) VALUES (%s, %s) RETURNING id",(customer_id, 0))
-            conn.commit()  # Commit the transaction
             await update.message.reply_text(f'سلام به آنلاین شاپ {store_name} خوش آمدید! 🍃')
 
             # Send menu with buttons
@@ -213,9 +215,14 @@ def handle_response(text: str, user: str) -> str:
     elif current_step == 3:
         CONVERSATION_STATE['color'] = text
         CONVERSATION_STATE['step'] = 4
-        return 'اگر توضیحاتی درمورد این سفارش دارید بنویسید:'
+        return 'تعداد سفارش خود را انتخاب کنید:'
 
     elif current_step == 4:
+        CONVERSATION_STATE['quantity'] = text
+        CONVERSATION_STATE['step'] = 5
+        return 'اگر توضیحاتی درمورد این سفارش دارید بنویسید:'
+
+    elif current_step == 5:
         CONVERSATION_STATE['description'] = text
         
         # Establish connection to the PostgreSQL database
@@ -232,8 +239,8 @@ def handle_response(text: str, user: str) -> str:
                 customer_id = cursor.fetchone()[0]
 
                 # Insert the order into the store_order table
-                cursor.execute("INSERT INTO store_order (link, size, color, description, customer_id, created_at) VALUES (%s, %s, %s, %s, %s, NOW()) RETURNING id",
-               (CONVERSATION_STATE['link'], CONVERSATION_STATE['size'], CONVERSATION_STATE['color'],
+                cursor.execute("INSERT INTO store_order (link, size, color, quantity, description, customer_id, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW()) RETURNING id",
+               (CONVERSATION_STATE['link'], CONVERSATION_STATE['size'], CONVERSATION_STATE['color'], CONVERSATION_STATE['quantity'],
                 CONVERSATION_STATE['description'], customer_id))
 
                 order_id = cursor.fetchone()[0]
@@ -250,6 +257,7 @@ def handle_response(text: str, user: str) -> str:
             لینک سفارش: {CONVERSATION_STATE['link']}
             سایز سفارش: {CONVERSATION_STATE['size']}
             رنگ سفارش: {CONVERSATION_STATE['color']}
+            تعداد سفارش: {CONVERSATION_STATE['quantity']}
             توضیحات: {CONVERSATION_STATE['description']}
             وضعیت سفارش: در حال انتظار
             """
@@ -654,6 +662,7 @@ async def handle_callback(update: Update, context: CallbackContext):
                         لینک: {order_details[1]}
                         سایز: {order_details[2]}
                         رنگ: {order_details[3]}
+                        تعداد: {order_details[7]}
                         توضیحات: {order_details[4]}
                         وضعیت سفارش: {status_text}
                         """
@@ -665,6 +674,7 @@ async def handle_callback(update: Update, context: CallbackContext):
                             لینک: {order_details[1]}
                             سایز: {order_details[2]}
                             رنگ: {order_details[3]}
+                            تعداد: {order_details[7]}
                             توضیحات: {order_details[4]}
                             وضعیت سفارش: {status_text}
                             مجموع هزینه ها: {total_amount}
@@ -679,8 +689,8 @@ async def handle_callback(update: Update, context: CallbackContext):
                             لینک: {order_details[1]}
                             سایز: {order_details[2]}
                             رنگ: {order_details[3]}
+                            تعداد: {order_details[7]}
                             توضیحات: {order_details[4]}
-                            وضعیت سفارش: {status_text}
                             مجموع هزینه های پرداخت نشده: {total_amount}
                             """
                     else:
@@ -688,6 +698,7 @@ async def handle_callback(update: Update, context: CallbackContext):
                             لینک: {order_details[1]}
                             سایز: {order_details[2]}
                             رنگ: {order_details[3]}
+                            تعداد: {order_details[7]}
                             توضیحات: {order_details[4]}
                             وضعیت سفارش: {status_text}
                             هنوز هزینه‌ای ثبت نشده است

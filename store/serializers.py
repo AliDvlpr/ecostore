@@ -25,7 +25,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id','link', 'size', 'color', 'description', 'customer', 'created_at', 'invoice','status', 'last_status']
+        fields = ['id','link', 'size', 'color', 'quantity', 'description', 'customer', 'created_at', 'invoice','status', 'last_status']
 
     def get_last_status(self, obj):
         last_status = obj.status.order_by('-status_change').first()
@@ -36,4 +36,4 @@ class OrderSerializer(serializers.ModelSerializer):
 class CreateOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
-        fields = ['link', 'size', 'color', 'description']
+        fields = ['link', 'size', 'color', 'quantity','description']

@@ -19,8 +19,9 @@ services:
       bash -c "until python manage.py migrate; do
                  echo 'Waiting for database...'; sleep 2;
                done &&
-               python manage.py runserver 0.0.0.0:8000 &&
-               python check_or_create_superuser.py"
+               python check_or_create_superuser.py &&
+                 echo 'Superuser created or already there.' &&
+               python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/code
     ports:

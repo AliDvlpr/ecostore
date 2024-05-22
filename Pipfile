@@ -16,6 +16,7 @@ telethon = "*"
 asyncpg = "*"
 djoser = "*"
 pillow = "*"
+jdatetime = "*"
 
 [dev-packages]
 

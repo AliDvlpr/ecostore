@@ -6,7 +6,7 @@ from django.db import models
 # Create your models here.
 class Customer(models.Model):
     name = models.CharField(max_length=100,null=True, blank=True)
-    telegram_id = models.CharField(max_length=100, unique=True,null=False, blank=False)
+    telegram_id = models.CharField(max_length=100, null=False, blank=False)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -34,6 +34,7 @@ class Order(models.Model):
     link = models.URLField(help_text='Enter the product link')
     size = models.CharField(max_length=50, help_text='Enter the product size')
     color = models.CharField(max_length=50, help_text='Enter the product color')
+    quantity = models.PositiveSmallIntegerField()
     description = models.TextField(help_text='Enter the product description')
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
