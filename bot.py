@@ -13,7 +13,7 @@ BOT_USERNAME:Final = "@ecostore_robot"
 # Database connection parameters
 DB_USER = "postgres"
 DB_PASSWORD = "1q2w3e4r5t6yAli!!"
-DB_HOST = "localhost"
+DB_HOST = "db"
 DB_NAME = "ecodb"
 DB_PORT ="5432"
 

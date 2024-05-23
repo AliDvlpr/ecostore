@@ -16,7 +16,9 @@ services:
   web:
     build: .
     command: >
-      bash -c "until python manage.py migrate; do
+      bash -c "
+               pip install -r requirements.txt &&
+               until python manage.py migrate; do
                  echo 'Waiting for database...'; sleep 2;
                done &&
                python check_or_create_superuser.py &&
