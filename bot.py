@@ -7,8 +7,8 @@ from datetime import datetime
 from decimal import Decimal
 
 # Bot connection parameters
-TOKEN:Final = "7143272077:AAH34BsZgIYUcIp-hu1uwtYCLaTvDrxR6lE"
-BOT_USERNAME:Final = "@ecostore_robot"
+TOKEN:Final = "6397352258:AAFDSapOaLrNlBHqMi5ne_ptaxulLi_iD6s"
+BOT_USERNAME:Final = "@VimbaBizBot"
 
 # Database connection parameters
 DB_USER = "postgres"
@@ -17,7 +17,7 @@ DB_HOST = "db"
 DB_NAME = "ecodb"
 DB_PORT ="5432"
 
-store_name = "اکو"
+store_name = "Vimba"
 # Define a dictionary to keep track of conversation states for each user
 conversation_states: Dict[int, str] = {}
 
@@ -58,7 +58,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             cursor.execute("SELECT name FROM store_customer WHERE telegram_id = %s", (user_id,))
             saved_name = cursor.fetchone()[0]
             
-            await update.message.reply_text(f"سلام {saved_name}! به آنلاین شاپ {store_name} خوش آمدید! 🍃")
+            await update.message.reply_text(f"سلام {saved_name}! به ربات آنلاین شاپ {store_name} خوش آمدید! 🍃")
 
             # Send menu with buttons
             keyboard = [[KeyboardButton("سفارش جدید 🛒"), KeyboardButton("سفارشات من 📋")],
@@ -71,7 +71,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             custom_keyboard = [[contact_keyboard]]
             reply_markup = ReplyKeyboardMarkup(custom_keyboard)
             await update.message.reply_text(f"""
-                                                سلام به آنلاین شاپ {store_name} خوش آمدید! 🍃 جهت شروع مراحل ثبت نام لظفا شماره موبایل خود را با استفاده از دکمه زیر ارسال کنید
+                                                سلام به ربات آنلاین شاپ {store_name} خوش آمدید! 🍃 جهت شروع مراحل ثبت نام لظفا شماره موبایل خود را با استفاده از دکمه زیر ارسال کنید
                                             """, reply_markup=reply_markup)
 
     finally:

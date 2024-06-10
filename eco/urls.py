@@ -21,6 +21,9 @@ from django.conf import settings
 from django.urls import path, include
 from django.conf.urls.static import static
 
+admin.site.site_header = 'پنل مدیریت vimba'
+admin.site.index_title = 'ادمین'
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path('store/', include('store.urls')),
