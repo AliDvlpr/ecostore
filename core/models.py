@@ -1,5 +1,8 @@
+import random
+from datetime import datetime
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+from django.utils.crypto import get_random_string
 
 class CustomUserManager(BaseUserManager):
     def _create_user(self, phone, password, **extra_fields):
@@ -35,6 +38,7 @@ class CustomUserManager(BaseUserManager):
 class User(AbstractUser):
     phone = models.CharField(max_length=20, unique=True, null=False, blank=False)
     otp = models.CharField(max_length=5, null=True, blank=True)
+    user_code = models.CharField(max_length=15, unique=True, null=True, blank=True)
 
     objects = CustomUserManager() 
 
@@ -43,3 +47,15 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.phone
+    
+    def save(self, *args, **kwargs):
+        if not self.user_code:
+            fixed_number = "8082"
+            date_of_join = datetime.now().strftime("%Y%m%d")
+            
+            # Count the number of users created today
+            today_users_count = User.objects.filter(date_joined__date=datetime.now().date()).count()
+            daily_counter = today_users_count + 1
+
+            self.user_code = f"{fixed_number}{date_of_join}{daily_counter:03d}"
+        super().save(*args, **kwargs)

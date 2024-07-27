@@ -111,9 +111,9 @@ class OrderAdmin(admin.ModelAdmin):
         return obj.color
     get_color.short_description = 'رنگ'
 
-    def get_quantity(self,obj):
+    def get_quantity(self, obj):
         return obj.quantity
-    get_quantity = 'تعداد'
+    get_quantity.short_description = 'تعداد'
 
     def get_customer(self, obj):
         return obj.customer
@@ -148,11 +148,10 @@ class OrderAdmin(admin.ModelAdmin):
                     message = f"سلام، {order.customer.name}, سفارش شما با کد {order.pk} تایید شده است. جهت پرداخت میتوانید اطلاعات سفارش مورد نظر را چک کنید"
                     # Call the function to send the message
         
-        # Save the instances and the formset
+        # Save the instances
         for instance in instances:
             instance.save()
         formset.save_m2m()
-
 
     last_status.short_description = 'آخرین وضعیت'
 

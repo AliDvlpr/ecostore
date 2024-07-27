@@ -17,6 +17,7 @@ asyncpg = "*"
 djoser = "*"
 pillow = "*"
 jdatetime = "*"
+qrcode = {extras = ["pil"], version = "*"}
 
 [dev-packages]
 
