@@ -82,6 +82,8 @@ WSGI_APPLICATION = "eco.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+#? Database in local system
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -92,6 +94,8 @@ DATABASES = {
         'PORT': '5432',  # Leave empty for default port (5432)
     }
 }
+
+#? Database in Server
 
 
 # Password validation
