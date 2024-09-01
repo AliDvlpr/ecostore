@@ -36,9 +36,9 @@ class CustomUserManager(BaseUserManager):
 
 # Replaced user model with default one to allow customization of User model
 class User(AbstractUser):
-    phone = models.CharField(max_length=20, unique=True, null=False, blank=False)
+    phone = models.CharField(max_length=20, unique=True, null=False, blank=False, verbose_name='موبایل')
     otp = models.CharField(max_length=5, null=True, blank=True)
-    user_code = models.CharField(max_length=15, unique=True, null=True, blank=True)
+    user_code = models.CharField(max_length=15, unique=True, null=True, blank=True, verbose_name='کد کاربری')
 
     objects = CustomUserManager() 
 

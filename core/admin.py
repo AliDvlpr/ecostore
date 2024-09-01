@@ -1,5 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
+from unfold.admin import ModelAdmin
+from django.contrib.auth.models import Group
 import qrcode
 from io import BytesIO
 from django.core.files.base import ContentFile
@@ -9,7 +12,7 @@ from PIL import Image
 from .models import User
 # Register your models here.
 @admin.register(User)
-class UserAdmin(BaseUserAdmin):
+class UserAdmin(BaseUserAdmin, ModelAdmin):
     fieldsets = (
         (None, {'fields': ('user_code','phone', 'password', 'is_active')}),
         ('Personal info', {'fields': ('username', 'first_name', 'last_name')}),
@@ -32,7 +35,7 @@ class UserAdmin(BaseUserAdmin):
             buffer = BytesIO()
             img.save(buffer, format="PNG")
             img_str = base64.b64encode(buffer.getvalue()).decode('utf-8')
-            return mark_safe(f'<img id="qr-code-img" src="data:image/png;base64,{img_str}" width="150" height="150" />')
+            return mark_safe(f'<img style="border-radius:10px;" id="qr-code-img" src="data:image/png;base64,{img_str}" width="150" height="150" />')
         return "No QR Code"
 
     display_qr_code.short_description = 'QR Code'

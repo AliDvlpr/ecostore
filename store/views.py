@@ -1,6 +1,6 @@
 from rest_framework.decorators import action
 from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, RetrieveModelMixin, UpdateModelMixin, ListModelMixin
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAdminUser, IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from .models import *
@@ -32,6 +32,19 @@ class CustomerViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, Upda
             return Customer.objects.all()
         
         return Customer.objects.none()
+
+class ProductViewSet(ModelViewSet):
+    http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated:
+            # Show products where the customer is the logged-in user or the product is public
+            return Product.objects.filter(customer=user) | Product.objects.filter(is_public=True)
+        else:
+            # Show only public products for non-logged-in users
+            return Product.objects.filter(is_public=True)
 
 class OrderViewSet(ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']

@@ -1,31 +1,36 @@
 from django import forms 
 from django.contrib import admin
+from unfold.admin import StackedInline, TabularInline, ModelAdmin
 from django.forms import Textarea
 from .models import *
-from bot import send_telegram_message
 import jdatetime
+import qrcode
+from io import BytesIO
+from django.utils.safestring import mark_safe
+import base64
 # Register your models here.
 class WalletInlineForm(forms.ModelForm):
     class Meta:
         model = Wallet
         fields = '__all__'
 
-class WalletInline(admin.StackedInline):
+class WalletInline(StackedInline):
     model = Wallet
     form = WalletInlineForm
     fields = ('amount',)
     readonly_fields = ('amount',)
     extra = 0
 
-class OrderInline(admin.TabularInline):  # or admin.StackedInline
+class OrderInline(TabularInline):  # or admin.StackedInline
     model = Order
     extra = 0
-    readonly_fields = ['link_button', 'size', 'color', 'quantity','description', 'customer']
-    exclude = ['link']
+    # readonly_fields = ['link_button', 'size', 'color', 'quantity','description', 'customer']
+    # exclude = ['link']
+    readonly_fields = ['quantity','description', 'customer']
 
 @admin.register(Customer)
-class CustomerAdmin(admin.ModelAdmin):
-    list_display = ('get_name', 'get_phone_number', 'order_count')
+class CustomerAdmin(ModelAdmin):
+    list_display = ('get_code', 'get_name', 'get_phone_number', 'order_count', 'display_qr_code')
     list_per_page = 20
     search_fields = ['name']
     inlines = [OrderInline, WalletInline]
@@ -38,11 +43,37 @@ class CustomerAdmin(admin.ModelAdmin):
     def get_phone_number(self, obj):
         return obj.user.phone if obj.user else None
 
-    get_phone_number.short_description = 'شماره موبایل'
+    get_phone_number.short_description = 'موبایل'
+
+    def get_code(self, obj):
+        return obj.user.user_code if obj.user else None
+    
+    get_code.short_description = 'کد کاربری'
+    
+    def display_qr_code(self, obj):
+        if obj.user:
+            if obj.user.user_code:
+                qr = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_L,
+                    box_size=10,
+                    border=4,
+                )
+                qr.add_data(obj.user.user_code)
+                qr.make(fit=True)
+
+                img = qr.make_image(fill='black', back_color='white')
+                buffer = BytesIO()
+                img.save(buffer, format="PNG")
+                img_str = base64.b64encode(buffer.getvalue()).decode('utf-8')
+                return mark_safe(f'<img style="border-radius:10px;" id="qr-code-img" src="data:image/png;base64,{img_str}" width="150" height="150" />')
+            return "No QR Code"
+        return None
+
 
 
 @admin.register(Wallet)
-class WalletAdmin(admin.ModelAdmin):
+class WalletAdmin(ModelAdmin):
     list_display = ('get_amount', 'customer_name')
     readonly_fields = ('get_amount', 'customer_name')
     search_fields = ('customer_name',)
@@ -64,7 +95,7 @@ class OrderInvoiceForm(forms.ModelForm):
         model = OrderInvoice
         fields = '__all__'
 
-class OrderInvoiceInline(admin.TabularInline):
+class OrderInvoiceInline(TabularInline):
     model = OrderInvoice
     form = OrderInvoiceForm
     fields = ('description', 'amount', 'photo','status')
@@ -87,15 +118,16 @@ class OrderInvoiceInline(admin.TabularInline):
 
     
 
-class OrderStatusInline(admin.TabularInline):
+class OrderStatusInline(TabularInline):
     model = OrderStatus
     extra = 0
 
 @admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
-    list_display = ('get_description', 'link_button', 'get_size', 'get_color', 'get_quantity', 'get_customer', 'last_status')
-    readonly_fields = ['description', 'link_button', 'size', 'color' ,'customer']
-    exclude = ['link']
+class OrderAdmin(ModelAdmin):
+    # list_display = ('get_description', 'link_button', 'get_size', 'get_color', 'get_quantity', 'get_customer', 'last_status')
+    # readonly_fields = ['description', 'link_button', 'size', 'color' ,'customer']
+    # exclude = ['link']
+    list_display = ('get_description', 'get_quantity', 'get_customer', 'last_status')
     search_fields = ('customer__name', 'description')
     inlines = [OrderInvoiceInline ,OrderStatusInline]
 
@@ -103,13 +135,13 @@ class OrderAdmin(admin.ModelAdmin):
         return obj.description
     get_description.short_description = 'توضیحات'
 
-    def get_size(self, obj):
-        return obj.size
-    get_size.short_description = 'سایز'
+    # def get_size(self, obj):
+    #     return obj.size
+    # get_size.short_description = 'سایز'
 
-    def get_color(self, obj):
-        return obj.color
-    get_color.short_description = 'رنگ'
+    # def get_color(self, obj):
+    #     return obj.color
+    # get_color.short_description = 'رنگ'
 
     def get_quantity(self, obj):
         return obj.quantity
@@ -156,7 +188,7 @@ class OrderAdmin(admin.ModelAdmin):
     last_status.short_description = 'آخرین وضعیت'
 
 @admin.register(Transaction)
-class TransactionAdmin(admin.ModelAdmin):
+class TransactionAdmin(ModelAdmin):
     list_display = ('get_amount', 'get_status', 'get_wallet','get_date')
     list_filter = ('status',)
     search_fields = ('customer__name',)  # You can customize this based on your requirements

@@ -13,7 +13,7 @@ BOT_USERNAME:Final = "@VimbaBizBot"
 # Database connection parameters
 DB_USER = "postgres"
 DB_PASSWORD = "1q2w3e4r5t6yAli!!"
-DB_HOST = "db"
+DB_HOST = "localhost"
 DB_NAME = "ecodb"
 DB_PORT ="5432"
 
@@ -62,7 +62,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             # Send menu with buttons
             keyboard = [[KeyboardButton("سفارش جدید 🛒"), KeyboardButton("سفارشات من 📋")],
-                    [KeyboardButton("راهنمایی ℹ️"), KeyboardButton("کیف پول 💰")]]
+                    [KeyboardButton("راهنمایی ℹ️"), KeyboardButton("حساب کاربری 🍃")]]
             reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
             await update.message.reply_text('لطفا انتخاب کنید:', reply_markup=reply_markup)
         else:
@@ -152,10 +152,22 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
             telegram_id = str(tuser.id)
             name = f"{tuser.first_name} {tuser.last_name}" if tuser.last_name else tuser.first_name
             if user is None:
+                fixed_number = "8082"
+                current_date = datetime.now().strftime("%Y%m%d")
+    
+                # Count the number of users created today
+                cursor.execute(
+                    "SELECT COUNT(*) FROM core_user WHERE date_joined::date = %s",
+                    (datetime.now().date(),)
+                )
+                today_users_count = cursor.fetchone()[0]
+                daily_counter = today_users_count + 1
+                new_user_code = f"{fixed_number}{current_date}{daily_counter:03d}"
+
                 # User does not exist, create a new user
                 cursor.execute(
-                    "INSERT INTO core_user (username, password, phone, is_active, date_joined, is_staff, is_superuser, email, first_name, last_name, otp) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
-                    (phone_number, '', phone_number, True, datetime.now(), False, False, '', '',  '', '')
+                    "INSERT INTO core_user (username, password, phone, is_active, date_joined, is_staff, is_superuser, email, first_name, last_name, otp, user_code) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                    (phone_number, '', phone_number, True, datetime.now(), False, False, '', '',  '', '', new_user_code)
                 )
                 user_id = cursor.fetchone()[0]
                 # Insert the new user into the store_customer table
@@ -169,14 +181,19 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 cursor.execute("UPDATE store_customer SET name = %s, telegram_id = %s WHERE user_id = %s RETURNING id", (name, telegram_id, user_id))
                 conn.commit()
                 customer_id = cursor.fetchone()[0]
-                cursor.execute("INSERT INTO store_wallet (customer_id, amount) VALUES (%s, %s) RETURNING id",(customer_id, 0))
+                cursor.execute("SELECT id FROM store_wallet WHERE customer_id - %s",(customer_id))
+                wallet = cursor.fetchone()[0]
+                if wallet:
+                    pass
+                else:
+                    cursor.execute("INSERT INTO store_wallet (customer_id, amount) VALUES (%s, %s) RETURNING id",(customer_id, 0))
                 conn.commit()
 
-            await update.message.reply_text(f'سلام به آنلاین شاپ {store_name} خوش آمدید! 🍃')
+            await update.message.reply_text(f'با موفقیت به حساب کاربری خود وارد شدید! 😉')
 
             # Send menu with buttons
             keyboard = [[KeyboardButton("سفارش جدید 🛒"), KeyboardButton("سفارشات من 📋")],
-                    [KeyboardButton("راهنمایی ℹ️"), KeyboardButton("کیف پول 💰")]]
+                    [KeyboardButton("راهنمایی ℹ️"), KeyboardButton("حساب کاربری 🍃")]]
             reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
             await update.message.reply_text('لطفا انتخاب کنید:', reply_markup=reply_markup)
         finally:
@@ -281,7 +298,7 @@ def handle_response(text: str, user: str) -> str:
         return 0
     elif 'بازگشت ↩️' == message:
         return 1
-    elif 'کیف پول 💰' in message:
+    elif "حساب کاربری 🍃" in message:
         return 2
     else:
         return f"ببخشید، {message} در بین دستورات تعریف شده وجود ندارد."
@@ -296,7 +313,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(response)
     if response == 1:
         keyboard = [[KeyboardButton("سفارش جدید 🛒"), KeyboardButton("سفارشات من 📋")],
-                    [KeyboardButton("راهنمایی ℹ️"), KeyboardButton("کیف پول 💰")]]
+                    [KeyboardButton("راهنمایی ℹ️"), KeyboardButton("حساب کاربری 🍃")]]
         reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
         await update.message.reply_text("بازگشت به صفحه اصلی", reply_markup=reply_markup)
     elif response == 0:

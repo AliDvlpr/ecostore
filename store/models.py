@@ -5,9 +5,9 @@ from django.db import models
 
 # Create your models here.
 class Customer(models.Model):
-    name = models.CharField(max_length=100,null=True, blank=True)
-    telegram_id = models.CharField(max_length=100, null=False, blank=False)
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100,null=True, blank=True, verbose_name='اسم')
+    telegram_id = models.CharField(max_length=100, null=False, blank=False, verbose_name='کد تلگرام')
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='کاربر')
 
     def __str__(self):
         return self.name or ''
@@ -21,8 +21,8 @@ class Customer(models.Model):
     order_count.short_description = 'تعداد سفارشات'
 
 class Wallet(models.Model):
-    amount = models.DecimalField(max_digits=12, decimal_places=0, default=0)
-    customer = models.OneToOneField(Customer, on_delete=models.CASCADE, related_name="wallet")
+    amount = models.DecimalField(max_digits=12, decimal_places=0, default=0, verbose_name='موجودی')
+    customer = models.OneToOneField(Customer, on_delete=models.CASCADE, related_name="wallet", verbose_name='مشتری')
 
     def __str__(self):
         return f"کیف پول {self.customer.name}"
@@ -30,14 +30,28 @@ class Wallet(models.Model):
     class Meta:
         verbose_name_plural = "کیف پول ها"
 
+class Product(models.Model):
+    link = models.URLField(help_text='Enter the product link', verbose_name='لینک')
+    size = models.CharField(max_length=50, help_text='Enter the product size', verbose_name='سایز')
+    color = models.CharField(max_length=50, help_text='Enter the product color', verbose_name='رنگ')
+    is_public = models.BooleanField(default=False, help_text='Is this a public product?', verbose_name='وضعیت در سایت')
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name='مشتری')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاریخ')
+
+    class Meta:
+        verbose_name_plural = "محصولات"
+
+    def link_button(self):
+        return format_html("<a href='{}' class='button'>Open Link</a>", self.link)
+
+    link_button.short_description = 'لینک'
+
 class Order(models.Model):
-    link = models.URLField(help_text='Enter the product link')
-    size = models.CharField(max_length=50, help_text='Enter the product size')
-    color = models.CharField(max_length=50, help_text='Enter the product color')
-    quantity = models.PositiveSmallIntegerField()
-    description = models.TextField(help_text='Enter the product description')
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
+    quantity = models.PositiveSmallIntegerField(verbose_name='تعداد')
+    description = models.TextField(help_text='Enter the product description', verbose_name='توضیحات')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='محصول')
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name='مشتری')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاریخ')
 
     def __str__(self):
         return f"Order for {self.customer} - {self.description}"
@@ -45,13 +59,8 @@ class Order(models.Model):
     class Meta:
         verbose_name_plural = "سفارشات"
 
-    def link_button(self):
-        return format_html("<a href='{}' class='button'>Open Link</a>", self.link)
-
-    link_button.short_description = 'لینک'
-
 class OrderStatus(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='status')
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='status', verbose_name='سفارش')
     STATUS_PENDING = 'P'
     STATUS_ACCEPTED = 'A'
     STATUS_COMPLETE = 'C'
@@ -67,8 +76,8 @@ class OrderStatus(models.Model):
         (STATUS_RECEIVED, 'دریافت شده')
     ]
     status = models.CharField(
-        max_length=1, choices=STATUS_CHOICES, default=STATUS_PENDING)
-    status_change = models.DateTimeField(auto_now_add=True)
+        max_length=1, choices=STATUS_CHOICES, default=STATUS_PENDING, verbose_name='وضعیت')
+    status_change = models.DateTimeField(auto_now_add=True, verbose_name='تاریخ تغییر')
 
     class Meta:
         verbose_name_plural = "وضعیت سفارش"
@@ -94,7 +103,7 @@ class OrderInvoice(models.Model):
         verbose_name_plural = "صورت حساب ها"
 
 class Transaction(models.Model):
-    amount = models.DecimalField(max_digits=12, decimal_places=0, default=0)
+    amount = models.DecimalField(max_digits=12, decimal_places=0, default=0, verbose_name='مقدار')
     STATUS_PENDING = 'P'
     STATUS_CONFIRMED = 'C'
     STATUS_REJECTED = 'R'
@@ -104,10 +113,10 @@ class Transaction(models.Model):
         (STATUS_REJECTED, 'Rejected')
     ]
     status = models.CharField(
-        max_length=1, choices=STATUS_CHOICES, default=STATUS_PENDING)
-    wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, null=False, blank=True)
-    photo = models.ImageField(upload_to='receipts/', null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+        max_length=1, choices=STATUS_CHOICES, default=STATUS_PENDING, verbose_name='وضعیت')
+    wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, null=False, blank=True, verbose_name='کیف پول')
+    photo = models.ImageField(upload_to='receipts/', null=True, blank=True, verbose_name='رسید')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاریخ')
 
     class Meta:
         verbose_name_plural = "واریز پول"

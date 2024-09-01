@@ -18,6 +18,8 @@ djoser = "*"
 pillow = "*"
 jdatetime = "*"
 qrcode = {extras = ["pil"], version = "*"}
+django-unfold-admin = "*"
+django-unfold = "*"
 
 [dev-packages]
 
