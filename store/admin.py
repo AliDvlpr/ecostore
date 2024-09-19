@@ -26,7 +26,7 @@ class OrderInline(TabularInline):  # or admin.StackedInline
     extra = 0
     # readonly_fields = ['link_button', 'size', 'color', 'quantity','description', 'customer']
     # exclude = ['link']
-    readonly_fields = ['quantity','description', 'customer']
+    readonly_fields = ['customer']
 
 @admin.register(Customer)
 class CustomerAdmin(ModelAdmin):
@@ -124,16 +124,9 @@ class OrderStatusInline(TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(ModelAdmin):
-    # list_display = ('get_description', 'link_button', 'get_size', 'get_color', 'get_quantity', 'get_customer', 'last_status')
-    # readonly_fields = ['description', 'link_button', 'size', 'color' ,'customer']
-    # exclude = ['link']
-    list_display = ('get_description', 'get_quantity', 'get_customer', 'last_status')
+    list_display = ('get_customer', 'last_status')
     search_fields = ('customer__name', 'description')
     inlines = [OrderInvoiceInline ,OrderStatusInline]
-
-    def get_description(self, obj):
-        return obj.description
-    get_description.short_description = 'توضیحات'
 
     # def get_size(self, obj):
     #     return obj.size
@@ -142,10 +135,6 @@ class OrderAdmin(ModelAdmin):
     # def get_color(self, obj):
     #     return obj.color
     # get_color.short_description = 'رنگ'
-
-    def get_quantity(self, obj):
-        return obj.quantity
-    get_quantity.short_description = 'تعداد'
 
     def get_customer(self, obj):
         return obj.customer

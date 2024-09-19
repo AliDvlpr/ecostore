@@ -21,13 +21,15 @@ from django.conf import settings
 from django.urls import path, include
 from django.conf.urls.static import static
 
+
 admin.site.site_header = 'پنل مدیریت vimba'
 admin.site.index_title = 'ادمین'
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path('store/', include('store.urls')),
+    path('api/', include('store.urls')),
     path('auth/', include('core.urls')),
+    path('', include('front.urls'))
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

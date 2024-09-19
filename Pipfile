@@ -20,6 +20,7 @@ jdatetime = "*"
 qrcode = {extras = ["pil"], version = "*"}
 django-unfold-admin = "*"
 django-unfold = "*"
+django-bootstrap-v5 = "*"
 
 [dev-packages]
 

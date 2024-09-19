@@ -2,6 +2,7 @@ from django.db import models
 from django.utils.html import format_html
 from django.conf import settings
 from django.db import models
+from uuid import uuid4
 
 # Create your models here.
 class Customer(models.Model):
@@ -32,11 +33,10 @@ class Wallet(models.Model):
 
 class Product(models.Model):
     link = models.URLField(help_text='Enter the product link', verbose_name='لینک')
-    size = models.CharField(max_length=50, help_text='Enter the product size', verbose_name='سایز')
-    color = models.CharField(max_length=50, help_text='Enter the product color', verbose_name='رنگ')
     is_public = models.BooleanField(default=False, help_text='Is this a public product?', verbose_name='وضعیت در سایت')
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name='مشتری')
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name='کاربر')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاریخ')
+    unit_price = models.DecimalField(max_digits=12, decimal_places=0, default=0, verbose_name="قیمت")
 
     class Meta:
         verbose_name_plural = "محصولات"
@@ -46,18 +46,44 @@ class Product(models.Model):
 
     link_button.short_description = 'لینک'
 
+class ProductDetails(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="details", verbose_name="محصول")
+    title = models.CharField(max_length=100, null=False, blank=False, verbose_name="عنوان")
+    derscription = models.TextField(verbose_name="توضیحات")
+
+class Cart(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid4)
+    created_at = models.DateTimeField(auto_now_add=True)
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True)
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveSmallIntegerField()
+
+    class Meta:
+        unique_together = [['cart', 'product']]
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveSmallIntegerField()
+
+    class Meta:
+        unique_together = [['cart', 'product']]
+
 class Order(models.Model):
-    quantity = models.PositiveSmallIntegerField(verbose_name='تعداد')
-    description = models.TextField(help_text='Enter the product description', verbose_name='توضیحات')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='محصول')
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name='مشتری')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاریخ')
 
     def __str__(self):
-        return f"Order for {self.customer} - {self.description}"
+        return f"Order for {self.customer} at {self.created_at}"
 
     class Meta:
         verbose_name_plural = "سفارشات"
+        permissions = [
+            ('cancel_order','Can cancel order')
+        ]
 
 class OrderStatus(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='status', verbose_name='سفارش')
@@ -81,6 +107,12 @@ class OrderStatus(models.Model):
 
     class Meta:
         verbose_name_plural = "وضعیت سفارش"
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.PROTECT, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='orderitems')
+    quantity = models.PositiveSmallIntegerField()
+    unit_price = models.DecimalField(max_digits=12, decimal_places=0, default=0, verbose_name="قیمت")
 
 class OrderInvoice(models.Model):
     amount = models.DecimalField(max_digits=12, decimal_places=0, default=0)

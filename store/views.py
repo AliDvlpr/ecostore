@@ -3,6 +3,7 @@ from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, RetrieveM
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
+from django.shortcuts import render
 from .models import *
 from .serializers import *
 from .permissions import *
@@ -76,3 +77,6 @@ class OrderInvoiceViewSet(ModelViewSet):
     queryset =OrderInvoice.objects.all()
     serializer_class = OrderInvoiceSerializer
     permission_classes = [IsAdminOrReadOnly]
+
+def login_page(request):
+    return render(request, 'login.html')
