@@ -1,0 +1,19 @@
+{% extends "front/base.html" %}
+
+{% block title %}Logout Confirmation{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+    <div class="card" style="width: 24rem;">
+        <div class="card-body text-center">
+            <h2 class="card-title"><i class="bi bi-exclamation-triangle-fill"></i> Logout</h2>
+            <p>Are you sure you want to logout?</p>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Yes</button>
+                <a href="{% url 'profile' %}" class="btn btn-secondary">No</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

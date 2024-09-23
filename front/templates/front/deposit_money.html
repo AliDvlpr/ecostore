@@ -1,0 +1,18 @@
+<!-- deposit_money.html -->
+{% extends "front/base.html" %}
+
+{% block title %}Wallet{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h2>Deposit Money</h2>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="amount" class="form-label">Amount</label>
+                <input type="number" class="form-control" id="amount" name="amount" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Deposit</button>
+        </form>
+    </div>
+{% endblock %}

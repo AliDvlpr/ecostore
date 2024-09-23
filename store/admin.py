@@ -74,21 +74,16 @@ class CustomerAdmin(ModelAdmin):
 
 @admin.register(Wallet)
 class WalletAdmin(ModelAdmin):
-    list_display = ('get_amount', 'customer_name')
-    readonly_fields = ('get_amount', 'customer_name')
-    search_fields = ('customer_name',)
-    exclude=('amount', 'customer')
+    list_display = ('get_amount', 'customer')
+    readonly_fields = ('get_amount', 'customer')
+    search_fields = ('customer',)
+    exclude=('amount',)
 
 
 
     def get_amount(self, obj):
         return f"{obj.amount:,} تومان"
     get_amount.short_description = 'موجودی'
-
-    def customer_name(self, obj):
-        return obj.customer.name if obj.customer else None
-    
-    customer_name.short_description = 'مشتری'
 
 class OrderInvoiceForm(forms.ModelForm):
     class Meta:

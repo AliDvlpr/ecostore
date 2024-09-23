@@ -3,16 +3,22 @@
 {% block title %}Verify OTP{% endblock %}
 
 {% block content %}
-    <div class="container">
-        <h2>Verify OTP</h2>
-        <form method="post" action="{% url 'verify_otp' user_id=user.id %}">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label for="otp" class="form-label">OTP</label>
-                <input type="text" class="form-control" id="otp" name="otp" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Verify</button>
-        </form>
+<div class="d-flex justify-content-center align-items-center" style="height: 100vh;">
+    <div class="card" style="width: 24rem;">
+        <div class="card-body">
+            <h2 class="card-title text-center"><i class="bi bi-shield-lock"></i> Verify Token</h2>
+            <form method="post" action="{% url 'verify_otp' phone=phone %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="otp" class="form-label">
+                        <i class="bi bi-key-fill"></i> Enter your verify token:
+                    </label>
+                    <input type="text" class="form-control" id="otp" name="otp" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Verify</button>
+            </form>
+        </div>
     </div>
+</div>
 {% endblock %}
 

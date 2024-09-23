@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'django_filters',
     'djoser',
     'bootstrap5',
+    'jalali_date',
     "core",
     "store",
     "front"
@@ -259,6 +260,28 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'your_app_name': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
 
 AUTH_USER_MODEL = 'core.User'
 # Internationalization

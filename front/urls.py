@@ -5,6 +5,14 @@ from .views import *
 urlpatterns = [
     path('', home, name='home'),
     path('profile', profile, name='profile'),
+    path('update_profile/', update_profile, name='update_profile'),
+    path('orders', orders, name='orders'),
+    path('wallet', wallet, name='wallet'),
+    path('wallet/deposit', deposit_money, name='deposit_money'),
+    path('transaction-success/', transaction_success, name='transaction_success'),
+    path('support', support, name='support'),
     path('login/', login_view, name='login'),
-    path('verify-otp/<int:user_id>/', verify_otp, name='verify_otp'),
+    path('verify-otp/<str:phone>/', verify_otp, name='verify_otp'),
+    path('logout/', logout_confirmation, name='logout_confirmation'),
+    path('logout/confirm/', logout_view, name='logout'),
 ]

@@ -1,0 +1,12 @@
+{% extends "front/base.html" %}
+
+{% block title %}Wallet{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h2>Transaction Successful</h2>
+        <p>Your deposit has been successfully created and is pending approval.</p>
+        <a href="{% url 'wallet' %}" class="btn btn-primary">Go back to wallet</a>
+    </div>
+{% endblock %}
+

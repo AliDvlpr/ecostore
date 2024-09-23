@@ -3,6 +3,7 @@ from django.utils.html import format_html
 from django.conf import settings
 from django.db import models
 from uuid import uuid4
+from core.models import User
 
 # Create your models here.
 class Customer(models.Model):
@@ -11,7 +12,7 @@ class Customer(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='کاربر')
 
     def __str__(self):
-        return self.name or ''
+        return self.name or str(self.user.user_code)
     
     class Meta:
         verbose_name_plural = "مشتریان"
@@ -140,9 +141,9 @@ class Transaction(models.Model):
     STATUS_CONFIRMED = 'C'
     STATUS_REJECTED = 'R'
     STATUS_CHOICES = [
-        (STATUS_PENDING, 'Pending'),
-        (STATUS_CONFIRMED, 'Confirmed'),
-        (STATUS_REJECTED, 'Rejected')
+        (STATUS_PENDING, 'در انتظار تایید'),
+        (STATUS_CONFIRMED, 'تایید شده'),
+        (STATUS_REJECTED, 'رد شده')
     ]
     status = models.CharField(
         max_length=1, choices=STATUS_CHOICES, default=STATUS_PENDING, verbose_name='وضعیت')

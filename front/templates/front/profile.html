@@ -3,8 +3,143 @@
 {% block title %}Profile{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h2>Profile</h2>
-    <p>Welcome to your profile page!</p>
-</div>
+    <style>
+        .nav-link {
+            color: #000;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .nav-link:hover {
+            background-color: #f8f9fa;
+            color: #007bff;
+        }
+        .nav-link.active {
+            background-color: #007bff;
+            color: #fff;
+        }
+        .sticky-sidebar {
+            position: -webkit-sticky; /* For Safari */
+            position: sticky;
+            top: 20px; /* Adjust this value as needed */
+        }
+    </style>
+    <div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+        <div class="row w-100">
+            <!-- Left Sidebar -->
+            <div class="col-md-4">
+                <div class="card sticky-sidebar">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-person-circle" style="font-size: 3rem;"></i>
+                            <div class="ms-3" style="margin-left: 1rem;">
+                                <h4>{{ user.first_name }} {{ user.last_name }}</h4>
+                                <p>{{ user.phone }}</p>
+                            </div>
+                        </div>
+                        <a href="{% url 'logout_confirmation' %}" class="btn btn-warning mb-3 w-100">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                        <hr>
+                        <div class="balance mb-3" style="background-color: #f8f9fa; padding: 10px; border-radius: 5px;">
+                            <h5 style="margin: 1px; font-size: 1.2em;">Current Balance</h5>
+                            <p style="margin: 1px; font-size: 1.5em; color: #28a745;">{{ wallet.amount }} تومان</p>
+                        </div>
+                        <hr>
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link active" href="/profile">Profile</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/orders">Orders</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/wallet">Wallet</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/support">Support</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <!-- Main Content -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h2>Profile</h2>
+                        <form id="profile-form"  method="post" action="{% url 'update_profile' %}">
+                            {% csrf_token %}
+                            {% for field in user_form %}
+                                <div class="mb-3">
+                                    <label class="form-label">{{ field.label }}</label>
+                                    {{ field }}
+                                </div>
+                            {% endfor %}
+                            <div class="d-flex justify-content-end">
+                                <button type="button" class="btn btn-primary me-2" id="edit-btn">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </button>
+                                <button type="submit" class="btn btn-success d-none me-2" id="save-btn">
+                                    <i class="bi bi-check-circle"></i> Save
+                                </button>
+                                <button type="button" class="btn btn-secondary d-none" id="cancel-btn">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </button>
+                            </div>
+                        </form>                        
+                        {% if customer.telegram_id %}
+                            <hr>
+                            <h3>Telegram Profile</h3>
+                            <div class="mb-3">
+                                <label class="form-label">Name</label>
+                                <input type="text" class="form-control" value="{{ customer.name }}" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Telegram ID</label>
+                                <input type="text" class="form-control" value="{{ customer.telegram_id }}" readonly>
+                            </div>
+                        {% else %}
+                            <hr>
+                            <div class="alert alert-warning" role="alert">
+                                You don't have a Telegram profile connected.
+                            </div>
+                        {% endif %}
+                        <!-- Add more content here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('edit-btn').addEventListener('click', function() {
+            var form = document.getElementById('profile-form');
+            var editableFields = ['first_name', 'last_name', 'email'];
+            editableFields.forEach(function(fieldName) {
+                var input = form.querySelector('input[name=' + fieldName + ']');
+                if (input) {
+                    input.removeAttribute('readonly');
+                }
+            });
+            document.getElementById('edit-btn').classList.add('d-none');
+            document.getElementById('save-btn').classList.remove('d-none');
+            document.getElementById('cancel-btn').classList.remove('d-none');
+        });
+    
+        document.getElementById('cancel-btn').addEventListener('click', function() {
+            window.location.href = '/profile';
+        });
+    
+        document.getElementById('profile-form').addEventListener('submit', function(event) {
+
+            var form = document.getElementById('profile-form');
+            var inputs = form.querySelectorAll('input');
+            inputs.forEach(function(input) {
+                input.setAttribute('readonly', 'readonly');
+            });
+            document.getElementById('edit-btn').classList.remove('d-none');
+            document.getElementById('save-btn').classList.add('d-none');
+            document.getElementById('cancel-btn').classList.add('d-none');
+        });
+    </script>
+     
 {% endblock %}

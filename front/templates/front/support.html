@@ -1,0 +1,82 @@
+{% extends "front/base.html" %}
+
+{% block title %}Orders{% endblock %}
+
+{% block content %}
+    <style>
+    .nav-link {
+        color: #000;
+        transition: background-color 0.3s, color 0.3s;
+    }
+    .nav-link:hover {
+        background-color: #f8f9fa;
+        color: #007bff;
+    }
+    .nav-link.active {
+        background-color: #007bff;
+        color: #fff;
+    }
+    </style>
+    <div
+    class="container d-flex justify-content-center align-items-center"
+    style="min-height: 100vh"
+    >
+    <div class="row w-100">
+        <!-- Left Sidebar -->
+        <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+            <div class="d-flex align-items-center mb-3">
+                <i class="bi bi-person-circle" style="font-size: 3rem"></i>
+                <div class="ms-3" style="margin-left: 1rem">
+                <h4>{{ user.first_name }} {{ user.last_name }}</h4>
+                <p>{{ user.phone }}</p>
+                </div>
+            </div>
+            <a
+                href="{% url 'logout_confirmation' %}"
+                class="btn btn-warning mb-3 w-100"
+            >
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+            <hr />
+            <div
+                class="balance mb-3"
+                style="background-color: #f8f9fa; padding: 10px; border-radius: 5px"
+            >
+                <h5 style="margin: 1px; font-size: 1.2em">Current Balance</h5>
+                <p style="margin: 1px; font-size: 1.5em; color: #28a745">
+                {{ wallet.amount }} تومان
+                </p>
+            </div>
+            <hr />
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                <a class="nav-link" href="/profile">Profile</a>
+                </li>
+                <li class="nav-item">
+                <a class="nav-link" href="/orders">Orders</a>
+                </li>
+                <li class="nav-item">
+                <a class="nav-link" href="/wallet">wallet</a>
+                </li>
+                <li class="nav-item">
+                <a class="nav-link active" href="/support">Support</a>
+                </li>
+            </ul>
+            </div>
+        </div>
+        </div>
+        <!-- Main Content -->
+        <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+            <h2>Support</h2>
+            <p>Welcome to your support page!</p>
+            <!-- Add more content here -->
+            </div>
+        </div>
+        </div>
+    </div>
+    </div>
+{% endblock %}
