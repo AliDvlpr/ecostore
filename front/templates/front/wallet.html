@@ -16,10 +16,7 @@
         background-color: #007bff;
         color: #fff;
     }
-    .rtl {
-        direction: rtl;
-        text-align: right;
-    }
+
     </style>
     <div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh">
         <div class="row w-100">
@@ -29,8 +26,8 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center mb-3">
                             <i class="bi bi-person-circle" style="font-size: 3rem"></i>
-                            <div class="ms-3" style="margin-left: 1rem">
-                                <h4>{{ user.first_name }} {{ user.last_name }}</h4>
+                            <div class="ms-3" style="margin-right: 1rem;">
+                                <h4>Hi, {{ user.first_name }} {{ user.last_name }}</h4>
                                 <p>{{ user.phone }}</p>
                             </div>
                         </div>
@@ -40,7 +37,7 @@
                         <hr />
                         <div class="balance mb-3" style="background-color: #f8f9fa; padding: 10px; border-radius: 5px">
                             <h5 style="margin: 1px; font-size: 1.2em">Current Balance</h5>
-                            <p style="margin: 1px; font-size: 1.5em; color: #28a745">{{ wallet.amount }} تومان</p>
+                            <p style="margin: 1px; font-size: 1.5em; color: #28a745">{{ wallet.amount }} IRR</p>
                         </div>
                         <hr />
                         <ul class="nav flex-column">
@@ -67,57 +64,66 @@
                         <h2>Wallet <a href="/wallet/deposit" class="btn btn-success">Deposit Money</a></h2>
                         <hr />
                             <h3>Transactions</h3>
-                            {% for transaction in page_obj %}
-                            {% if transaction.status == 'C' %}
-                                <div class="rtl alert alert-success">
-                                    <strong>{{ transaction.created_at }}</strong>: {{ transaction.amount }} تومان - {{ transaction.get_status_display }}
-                                </div>
-                            {% elif transaction.status == 'R' %}
-                                <div class="rtl alert alert-danger">
-                                    <strong>{{ transaction.created_at }}</strong>: {{ transaction.amount }} تومان - {{ transaction.get_status_display }}
-                                </div>
-                            {% else %}
-                                <div class="rtl alert alert-warning">
-                                    <strong>{{ transaction.created_at }}</strong>: {{ transaction.amount }} تومان - {{ transaction.get_status_display }}
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-
-                        <nav aria-label="Page navigation">
-                            <ul class="pagination justify-content-center">
-                                {% if page_obj.has_previous %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page=1" aria-label="First">
-                                            <span aria-hidden="true">&laquo;</span>
-                                        </a>
+                            <table class="table table-hover">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th scope="col">#</th>
+                                        <th scope="col">Amount</th>
+                                        <th scope="col">Status</th>
+                                        <th scope="col">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for transaction in page_obj %}
+                                    <tr class="{% if transaction.status == 'R' %}table-danger{% elif transaction.status == 'C' %}table-success{% else %}table-warning{% endif %}">
+                                        <th>{{ forloop.counter0|add:page_obj.start_index|add:0 }}</th>
+                                        <td>{{ transaction.amount }} IRR</td>
+                                        <td>{{ transaction.get_status_display }}</td>
+                                        <td>{{ transaction.created_at }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4">No transactions found.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination justify-content-center">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1" aria-label="First">
+                                                <span aria-hidden="true">«</span>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                                                <span aria-hidden="true">‹</span>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                            
+                                    <li class="page-item active">
+                                        <span class="page-link">
+                                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                                        </span>
                                     </li>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
-                                            <span aria-hidden="true">&lsaquo;</span>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                    
-                                <li class="page-item active">
-                                    <span class="page-link">
-                                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-                                    </span>
-                                </li>
-                    
-                                {% if page_obj.has_next %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
-                                            <span aria-hidden="true">&rsaquo;</span>
-                                        </a>
-                                    </li>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
-                                            <span aria-hidden="true">&raquo;</span>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                            </ul>
-                        </nav>
+                            
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                                                <span aria-hidden="true">›</span>
+                                            </a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                                                <span aria-hidden="true">»</span>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>                            
                     </div>            
                 </div>
             </div>

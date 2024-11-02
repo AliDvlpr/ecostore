@@ -1,0 +1,12 @@
+{% extends "front/base.html" %}
+
+{% block title %}Product Page{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h1>Product Page for {{ product.title }}</h1>
+        <p>{{ product.details.derscription }}</p>
+        <p>Price: {{ product.details.unit_price }}</p>
+        <a href="{{ product.link }}" target="_blank">Buy Now</a>
+    </div>
+{% endblock %}

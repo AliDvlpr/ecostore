@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from core.models import User
+from core.models import User, Ticket
 from store.models import Customer
 
 class LoginForm(forms.Form):
@@ -45,4 +45,14 @@ class CustomerProfileForm(forms.Form):
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
             'telegram_id': forms.EmailInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
+        }
+
+class TicketForm(forms.ModelForm):
+    class Meta:
+        model = Ticket
+        fields = ['order', 'title', 'description']
+        widgets = {
+            'order': forms.Select(attrs={'class': 'form-control'}),
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control'}),
         }

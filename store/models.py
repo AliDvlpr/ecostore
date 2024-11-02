@@ -32,25 +32,33 @@ class Wallet(models.Model):
     class Meta:
         verbose_name_plural = "کیف پول ها"
 
+from django.db import models
+
 class Product(models.Model):
-    link = models.URLField(help_text='Enter the product link', verbose_name='لینک')
+    link = models.URLField(max_length=1000, help_text='Enter the product link', verbose_name='لینک')
+    title = models.CharField(max_length=100, null=False, blank=False, verbose_name="عنوان")
     is_public = models.BooleanField(default=False, help_text='Is this a public product?', verbose_name='وضعیت در سایت')
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name='کاربر')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاریخ')
-    unit_price = models.DecimalField(max_digits=12, decimal_places=0, default=0, verbose_name="قیمت")
-
+    
     class Meta:
         verbose_name_plural = "محصولات"
-
+    
     def link_button(self):
         return format_html("<a href='{}' class='button'>Open Link</a>", self.link)
-
     link_button.short_description = 'لینک'
 
 class ProductDetails(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="details", verbose_name="محصول")
-    title = models.CharField(max_length=100, null=False, blank=False, verbose_name="عنوان")
-    derscription = models.TextField(verbose_name="توضیحات")
+    description = models.TextField(verbose_name="توضیحات")
+    unit_price = models.DecimalField(max_digits=12, decimal_places=0, default=0, verbose_name="قیمت")
+    color = models.CharField(max_length=50, verbose_name="رنگ", null=True, blank=True)
+    size = models.CharField(max_length=50, verbose_name="اندازه", null=True, blank=True)
+    image_url = models.URLField(max_length=1000, verbose_name="آدرس تصویر", null=True, blank=True)
+    availability = models.BooleanField(default=True, verbose_name='موجودی')
+    
+    def __str__(self):
+        return f"{self.product.title} - {self.unit_price}"
 
 class Cart(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4)
@@ -141,9 +149,9 @@ class Transaction(models.Model):
     STATUS_CONFIRMED = 'C'
     STATUS_REJECTED = 'R'
     STATUS_CHOICES = [
-        (STATUS_PENDING, 'در انتظار تایید'),
-        (STATUS_CONFIRMED, 'تایید شده'),
-        (STATUS_REJECTED, 'رد شده')
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_CONFIRMED, 'Confirmed'),
+        (STATUS_REJECTED, 'Rejected')
     ]
     status = models.CharField(
         max_length=1, choices=STATUS_CHOICES, default=STATUS_PENDING, verbose_name='وضعیت')

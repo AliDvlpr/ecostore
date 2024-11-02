@@ -1,13 +1,15 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout
 from django.views.decorators.csrf import csrf_protect
 from django.core.paginator import Paginator
+from urllib.parse import unquote  
 from jalali_date import datetime2jalali
-from core.models import User
+from core.models import User, Ticket
 from store.models import *
 from core.utils import generate_otp
 from .forms import *
+from .scraper import *
 import logging
 from django.utils import timezone
 
@@ -63,7 +65,7 @@ def wallet(request):
     for transaction in transactions:
         logger.debug(f"Transaction ID: {transaction.id}, Date: {transaction.created_at}")    
         transaction.created_at = datetime2jalali(transaction.created_at).strftime('%Y-%m-%d %H:%M')
-    paginator = Paginator(transactions, 5)
+    paginator = Paginator(transactions, 6)
 
     page_number = request.GET.get('page') or 1
     page_obj = paginator.get_page(page_number)
@@ -102,12 +104,69 @@ def support(request):
     user = request.user
     customer = Customer.objects.get(user=user)
     wallet = Wallet.objects.get(customer=customer)
+    tickets = Ticket.objects.filter(user=user).order_by('-created_at')
+    for ticket in tickets:
+        logger.debug(f"Ticket ID: {ticket.id}, Date: {ticket.created_at}")    
+        ticket.created_at = datetime2jalali(ticket.created_at).strftime('%Y-%m-%d %H:%M')
+    paginator = Paginator(tickets, 7)
+
+    page_number = request.GET.get('page') or 1
+    page_obj = paginator.get_page(page_number)
+    
     context = {
         'user': user,
         'customer': customer,
         'wallet': wallet,
+        'page_obj': page_obj,  # Only pass page_obj
     }
     return render(request, 'front/support.html', context)
+
+@login_required(login_url='/login/')
+def create_ticket(request):
+    if request.method == 'POST':
+        form = TicketForm(request.POST)
+        if form.is_valid():
+            ticket = form.save(commit=False)
+            ticket.user = request.user
+            ticket.save()
+            return redirect('support')
+    else:
+        form = TicketForm()
+    return render(request, 'front/create_ticket.html', {'form': form})
+
+def search_page(request):
+    query = request.COOKIES.get('search_query', None)
+    if query:
+        # Decode the query
+        query = unquote(query)
+        
+        # Check if the input is a valid link
+        if query.startswith('http'):
+            if request.user.is_authenticated:
+                # Call the scraping function here
+                images = extract_images(query)
+                title = extract_title(query)
+                colors = extract_colors(query)
+                sizes = extract_sizes(query)
+                description = extract_description(query)
+                data = {'title':title, 'images':images, 'colors':colors, 'sizes':sizes, 'description':description}
+                return render(request, 'front/search_results.html', {'query': data, 'data': data})
+            else:
+                return redirect('login')
+        elif query:
+            # Filter for public products or products related to the current user
+            products = Product.objects.filter(is_public=True) | Product.objects.filter(customer=request.user.customer)
+            product = products.filter(title__icontains=query).first()
+            
+            if product:
+                return redirect('product_page', product_id=product.id)
+            else:
+                return render(request, 'front/search_results.html', {'query': query, 'not_found': True})
+    return render(request, 'front/search_results.html', {'query': query, 'not_found': True})
+
+def product_page(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    return render(request, 'front/product_page.html', {'product': product})
 
 @csrf_protect
 def login_view(request):

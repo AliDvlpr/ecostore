@@ -2,7 +2,8 @@ import random
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
-from django.utils.crypto import get_random_string
+from django.conf import settings
+
 
 class CustomUserManager(BaseUserManager):
     def _create_user(self, phone, password, **extra_fields):
@@ -59,3 +60,23 @@ class User(AbstractUser):
 
             self.user_code = f"{fixed_number}{date_of_join}{daily_counter:03d}"
         super().save(*args, **kwargs)
+
+class Ticket(models.Model):
+    STATUS_WAITING = 'W'
+    STATUS_ANSWERED = 'A'
+    STATUS_CLOSED = 'C'
+    STATUS_CHOICES = [
+        (STATUS_WAITING, 'Waiting'),
+        (STATUS_ANSWERED, 'Answered'),
+        (STATUS_CLOSED, 'Closed'),
+    ]
+
+    order = models.ForeignKey('store.Order', on_delete=models.SET_NULL, null=True, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=False, blank=False, verbose_name='کاربر')
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='W')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title

@@ -22,6 +22,12 @@ django-unfold-admin = "*"
 django-unfold = "*"
 django-bootstrap-v5 = "*"
 django-jalali-date = "*"
+requests = "*"
+beautifulsoup4 = "*"
+selenium = "*"
+webdriver-manager = "*"
+lxml = "*"
+pandas = "*"
 
 [dev-packages]
 

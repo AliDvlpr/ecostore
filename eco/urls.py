@@ -22,7 +22,7 @@ from django.urls import path, include
 from django.conf.urls.static import static
 
 
-admin.site.site_header = 'پنل مدیریت vimba'
+admin.site.site_header = 'پنل مدیریت فروشگاه'
 admin.site.index_title = 'ادمین'
 
 urlpatterns = [
