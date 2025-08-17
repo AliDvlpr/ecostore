@@ -32,33 +32,34 @@ class Wallet(models.Model):
     class Meta:
         verbose_name_plural = "کیف پول ها"
 
-from django.db import models
-
 class Product(models.Model):
-    link = models.URLField(max_length=1000, help_text='Enter the product link', verbose_name='لینک')
-    title = models.CharField(max_length=100, null=False, blank=False, verbose_name="عنوان")
-    is_public = models.BooleanField(default=False, help_text='Is this a public product?', verbose_name='وضعیت در سایت')
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name='کاربر')
+    asin = models.CharField(max_length=20, unique=True, verbose_name="ASIN")
+    title = models.CharField(max_length=250, verbose_name="عنوان")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاریخ')
-    
+
     class Meta:
         verbose_name_plural = "محصولات"
-    
-    def link_button(self):
-        return format_html("<a href='{}' class='button'>Open Link</a>", self.link)
-    link_button.short_description = 'لینک'
+
+    def __str__(self):
+        return self.title
+
+    def asin_button(self):
+        return format_html("<span class='badge bg-primary'>{}</span>", self.asin)
+    asin_button.short_description = 'ASIN'
+
 
 class ProductDetails(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="details", verbose_name="محصول")
-    description = models.TextField(verbose_name="توضیحات")
-    unit_price = models.DecimalField(max_digits=12, decimal_places=0, default=0, verbose_name="قیمت")
-    color = models.CharField(max_length=50, verbose_name="رنگ", null=True, blank=True)
-    size = models.CharField(max_length=50, verbose_name="اندازه", null=True, blank=True)
-    image_url = models.URLField(max_length=1000, verbose_name="آدرس تصویر", null=True, blank=True)
-    availability = models.BooleanField(default=True, verbose_name='موجودی')
-    
+    description = models.TextField(verbose_name="توضیحات", null=True, blank=True)
+    pricing = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name="قیمت")
+    list_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name="قیمت قبل از تخفیف")
+    images = models.JSONField(default=list, blank=True, verbose_name="تصاویر")  # List of image URLs
+    feature_bullets = models.JSONField(default=list, blank=True, verbose_name="ویژگی‌ها")  # List of bullets
+    customization_options = models.JSONField(default=dict, blank=True, verbose_name="گزینه‌های سفارشی")  
+    # Example: {"Color": [{"value": "Red", "asin": "B0X...", "image": "..."}, ...], "Edition": [...]}
+
     def __str__(self):
-        return f"{self.product.title} - {self.unit_price}"
+        return f"{self.product.title} - {self.pricing}"
 
 class Cart(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4)

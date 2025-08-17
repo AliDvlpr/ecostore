@@ -1,10 +1,10 @@
 {% extends "front/base.html" %} {% block content %}
 <style>
   .search-in-navbar {
-            position: fixed;
-            top: 10px;
-            left: 25%;
-            width: 30%;
+    position: fixed;
+    top: 10px;
+    left: 25%;
+    width: 30%;
   }
   .hero-section {
     display: flex;
@@ -79,7 +79,7 @@
     border-radius: 20px;
   }
   .top-seller-item img {
-    border: 1px solid #CC0D39;
+    border: 1px solid #cc0d39;
     width: 100px;
     height: 100px;
     border-radius: 50%;
@@ -108,11 +108,11 @@
     text-align: center;
   }
   .top-seller-price {
-    color: #CC0D39;
+    color: #cc0d39;
     font-weight: bold;
   }
   .top-trends-price {
-    color: #CC0D39;
+    color: #cc0d39;
     font-weight: bold;
     width: 100%;
     text-align: center;
@@ -182,15 +182,15 @@
     justify-content: center;
     width: 80px;
     height: 80px;
-    background-color: #FCF7E2;
+    background-color: #fcf7e2;
     border-radius: 50%;
     text-decoration: none;
     transition: all 0.6s ease-in;
   }
-  .discover-btn:hover{
-    background-color: #CC0D39;
+  .discover-btn:hover {
+    background-color: #cc0d39;
   }
-  .discover-btn:hover svg{
+  .discover-btn:hover svg {
     fill: white;
   }
   .discover-btn svg {
@@ -272,19 +272,22 @@
       <form class="d-flex" id="searchForm">
         <input
           class="form-control me-2"
-          id = "searchInput"
+          id="searchInput"
           type="search"
           placeholder="Search for products or enter product link"
           aria-label="Search"
           name="query"
           required
         />
-        <button class="btn btn-outline-success" id="searchButton" type="submit">Search</button>
+        <button class="btn btn-outline-success" id="searchButton" type="submit">
+          Search
+        </button>
       </form>
     </div>
     <h1 class="hero-header">
       Search what
-      <span class="highlight">you want
+      <span class="highlight"
+        >you want
         <svg
           xmlns="http://www.w3.org/2000/svg"
           xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -331,9 +334,7 @@
         </svg>
       </span>
     </h1>
-    <p class="hero-des">
-      or enter the product link from international online stores
-    </p>
+    <p class="hero-des">or enter the product link from amazon store</p>
     <div class="hero-buttons">
       <button class="btn btn-dark">ADD TO CART</button>
       <button class="btn btn-light" style="border: 1px solid black">
@@ -416,10 +417,20 @@
     <div class="slider-header">
       <h2>Discover Latest Collection</h2>
       <a href="#" class="discover-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-arrow-right" viewBox="0 0 16 16">
-            <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"/>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="40"
+          height="40"
+          fill="currentColor"
+          class="bi bi-arrow-right"
+          viewBox="0 0 16 16"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"
+          />
         </svg>
-    </a>
+      </a>
     </div>
     <div class="slides">
       <div class="slide">
@@ -493,84 +504,103 @@
   </div>
 </div>
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-      var searchForm = document.getElementById('searchForm');
-      var searchInput = document.getElementById('searchInput');
+  document.addEventListener("DOMContentLoaded", function () {
+    var searchForm = document.getElementById("searchForm");
+    var searchInput = document.getElementById("searchInput");
 
-      searchForm.addEventListener('submit', function(event) {
-          event.preventDefault(); // Prevent the form from submitting in the traditional way
-          var searchInputValue = searchInput.value;
+    searchForm.addEventListener("submit", function (event) {
+      event.preventDefault(); // Prevent traditional form submission
+      var searchInputValue = searchInput.value.trim();
 
-          // Remove query string if present
-          var cleanedValue = searchInputValue.split('?')[0];
+      // Extract ASIN from Amazon URL
+      var asin = null;
+      if (searchInputValue.startsWith("http")) {
+        try {
+          var url = new URL(searchInputValue);
+          var match = url.pathname.match(
+            /\/(dp|gp\/product|product)\/([A-Z0-9]{10})/i
+          );
+          if (match) {
+            asin = match[2];
+          }
+        } catch (err) {
+          console.error("Invalid URL");
+        }
+      }
 
-          // Set cookie
-          document.cookie = "search_query=" + encodeURIComponent(cleanedValue) + "; path=/";
-
-          // Redirect to search page
-          window.location.href = "{% url 'search_page' %}";
-      });
+      // Redirect based on input type
+      if (asin) {
+        // If it’s a valid Amazon link
+        window.location.href =
+          "{% url 'search_page' %}?asin=" + encodeURIComponent(asin);
+      } else {
+        // If it's a normal query, go to products page with query parameter
+        window.location.href =
+          "{% url 'products_page' %}?q=" + encodeURIComponent(searchInputValue);
+      }
+    });
   });
 
-    window.onscroll = function() {moveSearchForm()};
+  window.onscroll = function () {
+    moveSearchForm();
+  };
 
-    function moveSearchForm() {
-        var searchForm = document.getElementById("searchForm");
-        var searchButton = document.getElementById("searchButton");
-        if (window.scrollY > 50) {
-            searchForm.classList.add("search-in-navbar");
-            searchButton.innerHTML = '<i class="bi bi-search"></i>';
-        } else {
-            searchForm.classList.remove("search-in-navbar");
-            searchButton.innerHTML = 'Search';
-        }
+  function moveSearchForm() {
+    var searchForm = document.getElementById("searchForm");
+    var searchButton = document.getElementById("searchButton");
+    if (window.scrollY > 50) {
+      searchForm.classList.add("search-in-navbar");
+      searchButton.innerHTML = '<i class="bi bi-search"></i>';
+    } else {
+      searchForm.classList.remove("search-in-navbar");
+      searchButton.innerHTML = "Search";
+    }
+  }
+
+  let slideIndex = 0;
+  showSlides(slideIndex);
+
+  function showSlides(n) {
+    let slides = document.querySelectorAll(".slide");
+    let dots = document.querySelectorAll(".dot");
+
+    if (n >= slides.length) {
+      slideIndex = 0;
+    } else if (n < 0) {
+      slideIndex = slides.length - 1;
     }
 
-
-    let slideIndex = 0;
-    showSlides(slideIndex);
-
-    function showSlides(n) {
-        let slides = document.querySelectorAll('.slide');
-        let dots = document.querySelectorAll('.dot');
-
-        if (n >= slides.length) {
-            slideIndex = 0;
-        } else if (n < 0) {
-            slideIndex = slides.length - 1;
-        }
-
-        slides.forEach((slide, index) => {
-            slide.style.transform = `translateX(${-slideIndex * 100}%)`;
-        });
-
-        dots.forEach((dot, index) => {
-            dot.classList.remove('active');
-            if (index === slideIndex) {
-                dot.classList.add('active');
-            }
-        });
-    }
-
-    function nextSlide() {
-        showSlides(++slideIndex);
-    }
-
-    document.querySelector('.prev').addEventListener('click', () => {
-        showSlides(--slideIndex);
+    slides.forEach((slide, index) => {
+      slide.style.transform = `translateX(${-slideIndex * 100}%)`;
     });
 
-    document.querySelector('.next').addEventListener('click', () => {
-        showSlides(++slideIndex);
+    dots.forEach((dot, index) => {
+      dot.classList.remove("active");
+      if (index === slideIndex) {
+        dot.classList.add("active");
+      }
     });
+  }
 
-    document.querySelectorAll('.dot').forEach((dot, index) => {
-        dot.addEventListener('click', () => {
-            showSlides(slideIndex = index);
-        });
+  function nextSlide() {
+    showSlides(++slideIndex);
+  }
+
+  document.querySelector(".prev").addEventListener("click", () => {
+    showSlides(--slideIndex);
+  });
+
+  document.querySelector(".next").addEventListener("click", () => {
+    showSlides(++slideIndex);
+  });
+
+  document.querySelectorAll(".dot").forEach((dot, index) => {
+    dot.addEventListener("click", () => {
+      showSlides((slideIndex = index));
     });
+  });
 
-    // Automatically change slides every 3 seconds
-    setInterval(nextSlide, 3000);
+  // Automatically change slides every 3 seconds
+  setInterval(nextSlide, 3000);
 </script>
 {% endblock %}

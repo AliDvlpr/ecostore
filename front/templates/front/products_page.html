@@ -1,0 +1,98 @@
+{% extends "front/base.html" %}
+
+{% block title %}Products{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+
+    <!-- Search Bar with Sort -->
+    <form id="product-search-form" class="mb-4 d-flex align-items-center">
+        <div class="input-group me-2 flex-grow-1">
+            <input type="text" class="form-control" id="search-input" placeholder="Search products or paste a link..." name="q" value="{{ query }}">
+            <button class="btn btn-primary" type="submit">Search</button>
+        </div>
+
+        <!-- Sort slider / dropdown -->
+        <select class="form-select w-auto" name="sort" aria-label="Sort products" onchange="this.form.submit()">
+            <option value="" {% if not sort_by %}selected{% endif %}>Sort By</option>
+            <option value="price_asc" {% if sort_by == "price_asc" %}selected{% endif %}>Price: Low to High</option>
+            <option value="price_desc" {% if sort_by == "price_desc" %}selected{% endif %}>Price: High to Low</option>
+            <option value="newest" {% if sort_by == "newest" %}selected{% endif %}>Newest</option>
+            <option value="popular" {% if sort_by == "popular" %}selected{% endif %}>Most Popular</option>
+        </select>
+    </form>
+
+    <!-- Product Cards Grid -->
+    <div class="row row-cols-1 row-cols-md-4 g-4">
+        {% for product in products %}
+            {% with details=product.details.first %}
+                <div class="col">
+                    <div class="card h-100 d-flex flex-column">
+                        {% if details and details.images and details.images.0 %}
+                            <div class="card-img-top-wrapper" style="height:200px; display:flex; justify-content:center; align-items:center; overflow:hidden;">
+                                <img src="{{ details.images.0 }}" class="card-img-top" style="max-height:100%; object-fit:contain;" alt="{{ product.title }}">
+                            </div>
+                        {% else %}
+                            <div class="card-img-top-wrapper" style="height:200px; display:flex; justify-content:center; align-items:center; overflow:hidden;">
+                                <img src="https://via.placeholder.com/300x200?text=No+Image" class="card-img-top" alt="No image">
+                            </div>
+                        {% endif %}
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">{{ product.title }}</h5>
+                                {% if details %}
+                                    <p class="card-text mb-4" style="flex-grow:1;">
+                                        {% if details.pricing and details.pricing > 0 %}
+                                            <strong>Price:</strong>
+                                            ${{ details.pricing }}
+                                        {% elif details.list_price and details.list_price > 0 %}
+                                            <strong>Price:</strong>
+                                            ${{ details.list_price }}
+                                        {% else %}
+                                            <span class="text-danger">Unavailable</span>
+                                        {% endif %}
+
+                                        {% if details.list_price and details.list_price > 0 and details.pricing and details.pricing > 0 %}
+                                            <br><small class="text-muted"><s>${{ details.list_price }}</s></small>
+                                        {% endif %}
+                                    </p>
+                                {% endif %}
+                                <a href="{% url 'product_page' product.id %}" class="btn btn-primary mt-auto w-100">View</a>
+                            </div>
+                    </div>
+                </div>
+            {% endwith %}
+        {% empty %}
+            <p>No products found.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- JavaScript to handle search input (Amazon links or queries) -->
+<script>
+document.getElementById("product-search-form").addEventListener("submit", function(e) {
+    e.preventDefault(); // Prevent form from submitting normally
+
+    const searchInputValue = document.getElementById("search-input").value.trim();
+    let asin = null;
+
+    // Check if input is an Amazon link
+    if (searchInputValue.startsWith("http")) {
+        try {
+            const url = new URL(searchInputValue);
+            const match = url.pathname.match(/\/(dp|gp\/product|product)\/([A-Z0-9]{10})/i);
+            if (match) asin = match[2];
+        } catch (err) {
+            console.error("Invalid URL");
+        }
+    }
+
+    // Redirect to search page
+    if (asin) {
+        window.location.href = "{% url 'search_page' %}?asin=" + encodeURIComponent(asin);
+    } else {
+        // Redirect to products page search query
+        window.location.href = "{% url 'products_page' %}?q=" + encodeURIComponent(searchInputValue);
+    }
+});
+</script>
+{% endblock %}

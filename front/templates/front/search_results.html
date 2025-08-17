@@ -1,128 +1,118 @@
 {% extends "front/base.html" %}
-{% block title %}Create Ticket{% endblock %}
+{% load static %}
+
+{% block title %}
+search
+{% endblock %}
+
 {% block content %}
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.9.1/font/bootstrap-icons.min.css" rel="stylesheet">
+<div class="container mt-5">
+  <div class="row">
+    <!-- Left: Images slider with thumbnails -->
+    <div class="col-lg-6 mb-4">
+      <div class="position-sticky" style="top: 100px;">
+        <!-- Main image -->
+        <div class="overflow-hidden mb-2">
+          <img
+            id="main-image"
+            src="{{ product.images.0 }}"
+            class="img-fluid w-100"
+            style="max-height: 500px; object-fit: contain;"
+          />
+        </div>
 
-<style>
-    .small-table td {
-        padding: 2px 5px;
-        font-size: 12px;
-    }
-    .alert-message {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background-color: #f8d7da;
-        color: #721c24;
-        padding: 10px;
-        border: 1px solid #f5c6cb;
-        border-radius: 5px;
-        z-index: 1000;
-    }
-</style>
-<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
-    <div class="row w-100">
-        <!-- Left Sidebar -->
-        <div class="col-md-4">
-            <div class="card sticky-sidebar">
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
-                        <i class="bi bi-search" style="font-size: 2rem;"></i>
-                        <div class="ms-3" style="margin-right: 1rem;">
-                            <h4>Search Results</h4>
-                        </div>
-                    </div>
-                    <div class="image-slider">
-                        {% for image in query.images %}
-                            <div>
-                                <img src="{{ image }}" style="width: 100%;" alt="Scraped Image">
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
+        <!-- Thumbnails -->
+        <div class="d-flex flex-wrap gap-2">
+          {% for img in product.images %}
+          <img
+            src="{{ img }}"
+            class="img-thumbnail thumbnail-img"
+            style="width: 80px; height: 80px; object-fit: contain; cursor: pointer;"
+          />
+          {% endfor %}
         </div>
-        <!-- Main Content -->
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-body">
-                    {% if query %}
-                        <h4 class="title">{{ query.title }} <button type="button" class="btn btn-success">Add to Cart</button></h4>
-                        <div class="mb-3">
-                            <label for="priceInput" class="form-label">Price</label>
-                            <input type="text" class="form-control" id="priceInput" placeholder="Enter price as shown on Amazon">
-                        </div>
-                        <div class="colors d-flex align-items-center">
-                            <span class="me-2">Colors:</span>
-                            {% for color in query.colors %}
-                                <div class="form-check me-2">
-                                    <input class="form-check-input" type="radio" name="colorOptions" id="color{{ forloop.counter }}" value="{{ color }}" {% if forloop.first %}checked{% endif %}>
-                                    <label class="form-check-label" for="color{{ forloop.counter }}">
-                                        {{ color }}
-                                    </label>
-                                </div>
-                            {% endfor %}
-                        </div>
-                        <div class="sizes d-flex align-items-center">
-                            <span class="me-2">Sizes:</span>
-                            {% for size in query.sizes %}
-                                <div class="form-check me-2">
-                                    <input class="form-check-input" type="radio" name="sizeOptions" id="size{{ forloop.counter }}" value="{{ size }}" {% if forloop.first %}checked{% endif %}>
-                                    <label class="form-check-label" for="size{{ forloop.counter }}">
-                                        {{ size }}
-                                    </label>
-                                </div>
-                            {% endfor %}
-                        </div>
-                        <table class="table mt-4 small-table">
-                            <tbody>
-                                {% for key, value in query.description.items %}
-                                    <tr>
-                                        <td class="fw-bold">{{ key }}</td>
-                                        <td>{{ value }}</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    {% else %}
-                        <p>No title found.</p>
-                    {% endif %}
-                    {% if not_found %}
-                        <p>No product found. Please try a different search term.</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+
+        <!-- Buy Button -->
+        {% if not product.pricing and not product.list_price %}
+        <button class="btn btn-secondary w-100 mt-3">Unavailable</button>
+        {% else %}
+        <button class="btn btn-success w-100 mt-3">Buy Now</button>
+        {% endif %}
+      </div>
     </div>
-</div>
-<div class="alert alert-message alert-dismissible fade show" role="alert" id="alertMessage">
-    <ol>
-        <li>Selections of the product may change by admins.</li>
-        <li>Please ensure the product with the selections is available.</li>
-        <li>Enter the price as shown on Amazon, but note that admins will check it.</li>
-    </ol>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+
+    <!-- Right: Product info -->
+    <div class="col-lg-6">
+      <!-- Name -->
+      <h1 class="h3">{{ product.name }}</h1>
+
+      <!-- Price -->
+      <div class="mb-2">
+        <span class="h4 text-danger">{{ product.pricing }}</span>
+        {% if product.list_price %}
+        <span class="text-muted text-decoration-line-through">{{ product.list_price }}</span>
+        {% endif %}
+      </div>
+
+      <!-- Availability -->
+      <div class="mb-3 text-success fw-bold">{{ product.availability }}</div>
+
+      <!-- Description -->
+      <div class="mb-3">{{ product.description|safe }}</div>
+
+      <!-- Feature bullets -->
+      <ul class="mb-3">
+        {% for bullet in product.feature_bullets %}
+        <li>{{ bullet }}</li>
+        {% endfor %}
+      </ul>
+
+      <!-- Customization options -->
+      {% for field, choices in product.customization_options.items %}
+      <div class="mb-4">
+        <h3 class="font-semibold">{{ field|capfirst }}</h3>
+        <div class="d-flex flex-wrap gap-2 mt-2">
+          {% for choice in choices %}
+            {% if choice.image %}
+            <!-- Choice with image -->
+            <a href="{% url 'search_page' %}?asin={{ choice.asin }}" class="btn btn-outline-light d-flex flex-column align-items-center p-1">
+              <img src="{{ choice.image }}" class="img-fluid" style="width:50px; height:50px; object-fit:contain;">
+              <small>{{ choice.value }}</small>
+            </a>
+            {% else %}
+            <!-- Choice without image -->
+            <a href="{% url 'search_page' %}?asin={{ choice.asin }}" class="btn btn-light">
+              {{ choice.value }} ({{ choice.asin }})
+            </a>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
 </div>
 
-<!-- Slick JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.min.js"></script>
-<script type="text/javascript">
-    $(document).ready(function() {
-        $('.image-slider').slick({
-            infinite: true,
-            slidesToShow: 3,
-            slidesToScroll: 1
-        });
-    });
-    setTimeout(function() {
-        $('#alertMessage').fadeOut('slow');
-    }, 60000);
+{{ product|json_script:"product-data" }}
+<script>
+  const productData = JSON.parse(document.getElementById("product-data").textContent);
+  console.log("Full product API data:", productData);
 
-    $('.btn-close').on('click', function() {
-        $('#alertMessage').fadeOut('slow');
+  // Main image change via thumbnails
+  const mainImage = document.getElementById("main-image");
+  const thumbnails = document.querySelectorAll(".thumbnail-img");
+
+  thumbnails.forEach((thumb) => {
+    thumb.addEventListener("click", () => {
+      mainImage.src = thumb.src;
+
+      // Highlight active thumbnail
+      thumbnails.forEach(t => t.classList.remove("border-primary", "border-2"));
+      thumb.classList.add("border-primary", "border-2");
     });
+  });
+
+  // Set first thumbnail active initially
+  if (thumbnails.length > 0) thumbnails[0].classList.add("border-primary", "border-2");
 </script>
 {% endblock %}

@@ -3,17 +3,22 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout
 from django.views.decorators.csrf import csrf_protect
 from django.core.paginator import Paginator
-from urllib.parse import unquote  
+from django.utils import timezone
 from jalali_date import datetime2jalali
 from core.models import User, Ticket
 from store.models import *
 from core.utils import generate_otp
 from .forms import *
-from .scraper import *
 import logging
-from django.utils import timezone
+import requests
+from decimal import Decimal
+import re
+from django.db.models import Q
+from django.db.models import DecimalField
+from django.db.models.functions import Coalesce
 
 logger = logging.getLogger(__name__)
+SCRAPERAPI_KEY = "83b64ba8fdfbd5b741e9fd83fd2a1af6"
 
 def home(request):
     return render(request, 'front/home.html')
@@ -134,39 +139,117 @@ def create_ticket(request):
         form = TicketForm()
     return render(request, 'front/create_ticket.html', {'form': form})
 
+def scrape_amazon_product(asin):
+    """
+    Call ScraperAPI structured Amazon product endpoint.
+    Returns whatever the API returns (dict or string).
+    """
+    url = 'https://api.scraperapi.com/structured/amazon/product'
+    payload = {
+        'api_key': SCRAPERAPI_KEY,
+        'asin': asin,
+        'country_code': 'us',
+        'tld': 'com'
+    }
+
+    try:
+        r = requests.get(url, params=payload, timeout=10)
+        r.raise_for_status()
+
+        try:
+            # Try parsing JSON
+            return r.json()
+        except ValueError:
+            # If not JSON, return raw text
+            return r.text
+
+    except requests.RequestException as e:
+        # Return error info in a dict so frontend can handle it
+        return {'error': str(e), 'asin': asin}
+
+def parse_price(value):
+    if not value:
+        return Decimal("0.00")
+    # Remove anything that is not a digit or a dot
+    cleaned = re.sub(r"[^\d.]", "", str(value))
+    try:
+        return Decimal(cleaned)
+    except:
+        return Decimal("0.00")
+
 def search_page(request):
-    query = request.COOKIES.get('search_query', None)
-    if query:
-        # Decode the query
-        query = unquote(query)
+    asin = request.GET.get('asin')
+    query = request.GET.get('query')
+
+    if asin:
         
-        # Check if the input is a valid link
-        if query.startswith('http'):
-            if request.user.is_authenticated:
-                # Call the scraping function here
-                images = extract_images(query)
-                title = extract_title(query)
-                colors = extract_colors(query)
-                sizes = extract_sizes(query)
-                description = extract_description(query)
-                data = {'title':title, 'images':images, 'colors':colors, 'sizes':sizes, 'description':description}
-                return render(request, 'front/search_results.html', {'query': data, 'data': data})
-            else:
-                return redirect('login')
-        elif query:
-            # Filter for public products or products related to the current user
-            products = Product.objects.filter(is_public=True) | Product.objects.filter(customer=request.user.customer)
-            product = products.filter(title__icontains=query).first()
-            
+        if request.user.is_authenticated:
+            product = Product.objects.filter(asin=asin).first()
             if product:
                 return redirect('product_page', product_id=product.id)
             else:
-                return render(request, 'front/search_results.html', {'query': query, 'not_found': True})
-    return render(request, 'front/search_results.html', {'query': query, 'not_found': True})
+                data = scrape_amazon_product(asin)
+                # Save scraped product to DB
+                new_product = Product.objects.create(
+                    asin=asin,
+                    title=data.get('name', f'Product {asin}')
+                )
+
+                # Save product details
+                ProductDetails.objects.create(
+                    product=new_product,
+                    description=data.get('description', ''),
+                    pricing=parse_price(data.get('pricing')),
+                    list_price=parse_price(data.get('list_price')),
+                    images=data.get('images', []),
+                    feature_bullets=data.get('feature_bullets', []),
+                    customization_options=data.get('customization_options', {})
+                )
+                return render(request, 'front/search_results.html', {'product': data})
+        else:
+            return redirect('login')
+    else:
+        return render(request, 'front/search_results.html', {'not_found': True})
 
 def product_page(request, product_id):
     product = get_object_or_404(Product, id=product_id)
-    return render(request, 'front/product_page.html', {'product': product})
+    details = get_object_or_404(ProductDetails, product=product)
+
+    return render(request, "front/product_page.html", {
+        "product": product,
+        "details": details,
+    })
+
+def products_page(request):
+    query = request.GET.get('q', '')
+    sort_by = request.GET.get('sort', '')
+
+    products = Product.objects.all()
+
+    if query:
+        products = products.filter(
+            Q(title__icontains=query) | Q(details__description__icontains=query)
+        )
+
+    # Annotate the price using Coalesce and specify output_field
+    products = products.annotate(
+        price_for_sorting=Coalesce('details__pricing', 'details__list_price', output_field=DecimalField())
+    )
+
+    if sort_by == 'price_asc':
+        products = products.order_by('price_for_sorting')
+    elif sort_by == 'price_desc':
+        products = products.order_by('-price_for_sorting')
+    elif sort_by == 'newest':
+        products = products.order_by('-created_at')
+    elif sort_by == 'popular':
+        pass  # no-op for now
+
+    return render(request, 'front/products_page.html', {
+        'products': products,
+        'query': query,
+        'sort_by': sort_by
+    })
 
 @csrf_protect
 def login_view(request):

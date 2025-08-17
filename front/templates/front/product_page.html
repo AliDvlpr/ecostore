@@ -1,12 +1,106 @@
 {% extends "front/base.html" %}
+{% load static %}
 
-{% block title %}Product Page{% endblock %}
+{% block title %}Product{% endblock %}
 
 {% block content %}
-    <div class="container mt-5">
-        <h1>Product Page for {{ product.title }}</h1>
-        <p>{{ product.details.derscription }}</p>
-        <p>Price: {{ product.details.unit_price }}</p>
-        <a href="{{ product.link }}" target="_blank">Buy Now</a>
+<div class="container mt-5">
+  <div class="row">
+    <!-- LEFT: Image Slider -->
+    <div class="col-lg-6 mb-4">
+      <div class="position-sticky" style="top: 100px;">
+        <!-- Main Image -->
+        <div class="overflow-hidden mb-2">
+          <img id="main-image" src="{{ details.images.0 }}" class="img-fluid w-100" style="max-height: 500px; object-fit: contain;">
+        </div>
+
+        <!-- Thumbnails -->
+        <div class="d-flex flex-wrap gap-2">
+          {% for img in details.images %}
+            <img src="{{ img }}" class="img-thumbnail thumbnail-img" style="width: 80px; height: 80px; object-fit: contain; cursor: pointer;">
+          {% endfor %}
+        </div>
+
+        <!-- Buy Button -->
+        {% if details.pricing|default:0 > 0 or details.list_price|default:0 > 0 %}
+          <button class="btn btn-success w-100 mt-3">Buy Now</button>
+        {% else %}
+          <button class="btn btn-secondary w-100 mt-3" disabled>Unavailable</button>
+        {% endif %}
+      </div>
     </div>
+
+    <!-- RIGHT: Product Info -->
+    <div class="col-lg-6">
+      <h1 class="h3">{{ product.title }}</h1>
+
+      <!-- Price -->
+      <div class="mb-2">
+        {% if details.pricing|default:0 > 0 %}
+          <span class="h4 text-danger">${{ details.pricing }}</span>
+          {% if details.list_price|default:0 > 0 %}
+            <span class="text-muted text-decoration-line-through">${{ details.list_price }}</span>
+          {% endif %}
+        {% elif details.list_price|default:0 > 0 %}
+          <span class="h4 text-danger">${{ details.list_price }}</span>
+        {% else %}
+          <span class="text-danger">Unavailable</span>
+        {% endif %}
+      </div>
+
+      <!-- Description -->
+      {% if details.description %}
+        <p class="mb-2">{{ details.description }}</p>
+      {% endif %}
+
+      <!-- Features -->
+      {% if details.feature_bullets %}
+        <ul>
+          {% for bullet in details.feature_bullets %}
+            <li>{{ bullet }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <!-- Customization options -->
+      {% if details.customization_options %}
+        {% for option, values in details.customization_options.items %}
+          <div class="mb-4">
+            <h3 class="font-semibold">{{ option }}</h3>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+              {% for val in values %}
+                {% if val.image %}
+                  <a href="{% url 'search_page' %}?asin={{ val.asin }}" class="btn btn-outline-light d-flex flex-column align-items-center p-1">
+                    <img src="{{ val.image }}" class="img-fluid" style="width: 50px; height: 50px; object-fit: contain;">
+                    <small>{{ val.value }}</small>
+                  </a>
+                {% else %}
+                  <a href="{% url 'search_page' %}?asin={{ val.asin }}" class="btn btn-light">
+                    {{ val.value }} ({{ val.asin }})
+                  </a>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+  // Thumbnail switching
+  const mainImage = document.getElementById("main-image");
+  const thumbnails = document.querySelectorAll(".thumbnail-img");
+
+  thumbnails.forEach((thumb) => {
+    thumb.addEventListener("click", () => {
+      mainImage.src = thumb.src;
+      thumbnails.forEach(t => t.classList.remove("border-primary", "border-2"));
+      thumb.classList.add("border-primary", "border-2");
+    });
+  });
+
+  if (thumbnails.length > 0) thumbnails[0].classList.add("border-primary", "border-2");
+</script>
 {% endblock %}
