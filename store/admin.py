@@ -212,3 +212,55 @@ class TransactionAdmin(ModelAdmin):
 
         super().save_model(request, obj, form, change)
 
+from django.contrib import admin
+from .models import Product, ProductDetails
+
+
+class ProductDetailsInline(admin.StackedInline):  # or TabularInline if you prefer
+    model = ProductDetails
+    extra = 0
+    show_change_link = True
+
+
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    list_display = ("title", "asin_button", "created_at")
+    search_fields = ("title", "asin")
+    list_filter = ("created_at",)
+    ordering = ("-created_at",)
+    readonly_fields = ("created_at",)
+    inlines = [ProductDetailsInline]
+
+    # # Custom column to show "Update" button
+    # def update_button(self, obj):
+    #     return format_html(
+    #         '<a class="button" href="{}">Update</a>',
+    #         f"/admin/update-product/{obj.asin}/"
+    #     )
+    # update_button.short_description = "Update Product"
+    # update_button.allow_tags = True
+
+class StoreProductInline(admin.TabularInline):
+    model = StoreProduct
+    extra = 0  # don't show extra blank rows by default
+    autocomplete_fields = ("product",)  # makes it easier to select products if many exist
+    readonly_fields = ("created_at",)
+
+
+@admin.register(Store)
+class StoreAdmin(admin.ModelAdmin):
+    list_display = ("name", "owner", "score", "phone", "website", "created_at")
+    search_fields = ("name", "owner__username", "phone")
+    list_filter = ("score",)
+    ordering = ("-score", "name")
+    readonly_fields = ("created_at",)
+    inlines = [StoreProductInline]  # inline StoreProduct inside Store
+
+@admin.register(StoreProduct)
+class StoreProductAdmin(admin.ModelAdmin):
+    list_display = ("product", "store", "price", "stock", "url", "created_at")
+    search_fields = ("product__title", "store__name")
+    list_filter = ("stock",)
+    autocomplete_fields = ("product", "store")
+    ordering = ("-created_at",)
+    readonly_fields = ("created_at",)

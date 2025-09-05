@@ -1,0 +1,13 @@
+{% extends "front/base.html" %}
+
+{% block content %}
+<div class="container" style="margin-top:50px;">
+    <div class="alert alert-danger shadow p-4 rounded text-center">
+        <h2 class="mb-3">🚨 Service Unavailable</h2>
+        <p class="mb-4">{{ message }}</p>
+        <a href="{% url 'home' %}" class="btn btn-primary">
+            ⬅ Return to Home
+        </a>
+    </div>
+</div>
+{% endblock %}

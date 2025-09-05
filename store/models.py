@@ -61,6 +61,40 @@ class ProductDetails(models.Model):
     def __str__(self):
         return f"{self.product.title} - {self.pricing}"
 
+class Store(models.Model):
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="stores")
+    name = models.CharField(max_length=255, unique=True)
+    address = models.TextField(blank=True, null=True)
+    score = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)  # e.g. 4.5
+    website = models.URLField(blank=True, null=True)
+    phone = models.CharField(max_length=50, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.score})"
+    
+    class Meta:
+        verbose_name_plural = "فروشگاه ها"
+    
+class StoreProduct(models.Model):
+    store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name="products")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="stores")
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    stock = models.BooleanField(default=True)  # if the store currently has stock
+    url = models.URLField(blank=True, null=True)  # direct product link in the store
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('store', 'product')  # prevent duplicate entries
+
+    def __str__(self):
+        return f"{self.product.title} at {self.store.name}"
+
+    class Meta:
+        verbose_name_plural = "محصولات فروشگاه ها"
+    
+
 class Cart(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -69,18 +103,17 @@ class Cart(models.Model):
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.PositiveSmallIntegerField()
+    store_product = models.ForeignKey(StoreProduct, null=True, blank=True, on_delete=models.CASCADE)
+    quantity = models.PositiveSmallIntegerField(default=1)
 
     class Meta:
-        unique_together = [['cart', 'product']]
+        unique_together = [['cart', 'product', 'store_product']]
 
-class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.PositiveSmallIntegerField()
+    def __str__(self):
+        if self.store_product:
+            return f"{self.product.title} from {self.store_product.store.name} x {self.quantity}"
+        return f"{self.product.title} x {self.quantity}"
 
-    class Meta:
-        unique_together = [['cart', 'product']]
 
 class Order(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name='مشتری')
@@ -162,3 +195,4 @@ class Transaction(models.Model):
 
     class Meta:
         verbose_name_plural = "واریز پول"
+

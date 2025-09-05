@@ -189,6 +189,14 @@ def search_page(request):
                 return redirect('product_page', product_id=product.id)
             else:
                 data = scrape_amazon_product(asin)
+                # Check if product name exists
+                if not data or not data.get('name'):
+                    # Service error -> don't create product
+                    return render(
+                        request,
+                        'front/service_error.html',
+                        {'message': 'Amazon service is not reachable right now. Please try again later.'}
+                    )
                 # Save scraped product to DB
                 new_product = Product.objects.create(
                     asin=asin,
@@ -215,9 +223,12 @@ def product_page(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     details = get_object_or_404(ProductDetails, product=product)
 
+    store_products = StoreProduct.objects.filter(product=product)
+
     return render(request, "front/product_page.html", {
         "product": product,
         "details": details,
+        "store_products": store_products,
     })
 
 def products_page(request):
@@ -250,6 +261,10 @@ def products_page(request):
         'query': query,
         'sort_by': sort_by
     })
+
+def stores_list(request):
+    stores = Store.objects.all().order_by('-score', 'name')
+    return render(request, 'front/stores_list.html', {'stores': stores})
 
 @csrf_protect
 def login_view(request):
@@ -314,3 +329,68 @@ def logout_view(request):
         logout(request)
         return redirect('/login/')
     return redirect('/profile/')
+
+@login_required
+def add_to_cart(request):
+    """
+    Adds a product or store product to the user's cart.
+    Expects GET parameters:
+        - product_id: the Product id
+        - store_product_id: optional, if buying from a store
+        - quantity: optional, defaults to 1
+    """
+    quantity = int(request.GET.get('quantity', 1))
+    product_id = request.GET.get('product_id')
+    store_product_id = request.GET.get('store_product_id')
+
+    # Ensure the user has a customer object
+    customer = getattr(request.user, 'customer', None)
+    if not customer:
+        customer = Customer.objects.create(user=request.user)
+
+    # Get or create cart
+    cart, _ = Cart.objects.get_or_create(customer=customer)
+
+    # Fetch product and store product if exists
+    store_product = None
+    if store_product_id:
+        store_product = get_object_or_404(StoreProduct, id=store_product_id)
+        product = store_product.product
+    else:
+        product = get_object_or_404(Product, id=product_id)
+
+    # Add or update cart item
+    cart_item, created = CartItem.objects.get_or_create(
+        cart=cart,
+        product=product,
+        store_product=store_product
+    )
+    if not created:
+        cart_item.quantity += quantity
+    else:
+        cart_item.quantity = quantity
+    cart_item.save()
+
+    return redirect('cart_page')
+
+@login_required
+def cart_page(request):
+    # Get user cart
+    customer = getattr(request.user, 'customer', None)
+    if not customer:
+        return render(request, 'front/cart.html', {'items': []})
+
+    cart = Cart.objects.filter(customer=customer).first()
+    if not cart:
+        return render(request, 'front/cart.html', {'items': []})
+
+    items = cart.items.select_related('product', 'store_product')
+    total = sum(
+        (item.store_product.price if item.store_product else item.product.details.first().pricing) * item.quantity
+        for item in items
+    )
+
+    return render(request, 'front/cart.html', {
+        'items': items,
+        'total': total,
+    })
