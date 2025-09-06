@@ -160,8 +160,8 @@ ecostore/
 
 ## Support
 
-For support, please create a ticket in the admin interface or contact the system administrator.
+if there is any bugs create a issue
 
 ## License
 
-[Include license information here]
+---
