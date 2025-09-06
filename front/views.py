@@ -1,3 +1,5 @@
+from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout
@@ -13,9 +15,12 @@ import logging
 import requests
 from decimal import Decimal
 import re
-from django.db.models import Q
+from django.db.models import Q, DecimalField, Value, IntegerField, Case, When, Sum
 from django.db.models import DecimalField
 from django.db.models.functions import Coalesce
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+
 
 logger = logging.getLogger(__name__)
 SCRAPERAPI_KEY = "83b64ba8fdfbd5b741e9fd83fd2a1af6"
@@ -54,12 +59,70 @@ def orders(request):
     user = request.user
     customer = Customer.objects.get(user=user)
     wallet = Wallet.objects.get(customer=customer)
+
+    # Get all orders for this customer
+    orders_list = Order.objects.filter(customer=customer).order_by('-created_at')
+
+    # Calculate total for each order
+    for order in orders_list:
+        order.total = sum(item.unit_price * item.quantity for item in order.items.all())
+
+    # Pagination (6 orders per page)
+    paginator = Paginator(orders_list, 6)
+    page_number = request.GET.get('page') or 1
+    orders_page = paginator.get_page(page_number)
+
     context = {
         'user': user,
         'customer': customer,
         'wallet': wallet,
+        'orders_page': orders_page,
     }
     return render(request, 'front/orders.html', context)
+
+@login_required(login_url='/login/')
+def order_detail(request, order_id):
+    user = request.user
+    customer = Customer.objects.get(user=user)
+    wallet = Wallet.objects.get(customer=customer)
+    order = Order.objects.get(id=order_id, customer=customer)
+    items = order.items.select_related('product', 'store_product')
+    total = sum(item.unit_price * item.quantity for item in items)
+
+    context = {
+        'user': user,
+        'customer': customer,
+        'wallet': wallet,
+        'order': order,
+        'items': items,
+        'total': total,
+    }
+    return render(request, 'front/order_detail.html', context)
+
+@login_required(login_url='/login/')
+def complete_payment(request, order_id):
+    customer = Customer.objects.get(user=request.user)
+    wallet = Wallet.objects.get(customer=customer)
+    order = Order.objects.get(id=order_id, customer=customer)
+    items = order.items.all()
+    total = sum(item.unit_price * item.quantity for item in items)
+
+    if wallet.amount >= total:
+        # Deduct from wallet
+        wallet.amount -= total
+        wallet.save()
+
+        # Mark order status as complete
+        OrderStatus.objects.create(order=order, status=OrderStatus.STATUS_COMPLETE)
+
+        # Optionally, create invoice
+        OrderInvoice.objects.create(order=order, amount=total, status=OrderInvoice.STATUS_CONFIRMED)
+
+        messages.success(request, "Payment completed successfully!")
+    else:
+        messages.error(request, "Insufficient balance.")
+
+    return redirect('order_detail', order_id=order.id)
 
 @login_required(login_url='/login/')
 def wallet(request):
@@ -222,14 +285,43 @@ def search_page(request):
 def product_page(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     details = get_object_or_404(ProductDetails, product=product)
-
     store_products = StoreProduct.objects.filter(product=product)
+
+    # Determine if the product is "unavailable"
+    is_unavailable = (
+        not store_products.exists() and 
+        (details.pricing <= 0 and details.list_price <= 0)
+    )
 
     return render(request, "front/product_page.html", {
         "product": product,
         "details": details,
         "store_products": store_products,
+        "is_unavailable": is_unavailable,
     })
+
+@csrf_exempt
+@require_POST
+def refetch_product(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+
+    try:
+        data = scrape_amazon_product(product.asin)
+        if not data or not data.get('name'):
+            return JsonResponse({'success': False, 'error': 'Amazon service unreachable'})
+
+        details, _ = ProductDetails.objects.get_or_create(product=product)
+        details.description = data.get('description', '')
+        details.pricing = parse_price(data.get('pricing'))
+        details.list_price = parse_price(data.get('list_price'))
+        details.images = data.get('images', [])
+        details.feature_bullets = data.get('feature_bullets', [])
+        details.customization_options = data.get('customization_options', {})
+        details.save()
+
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 
 def products_page(request):
     query = request.GET.get('q', '')
@@ -237,24 +329,35 @@ def products_page(request):
 
     products = Product.objects.all()
 
+    # Search filter
     if query:
         products = products.filter(
             Q(title__icontains=query) | Q(details__description__icontains=query)
         )
 
-    # Annotate the price using Coalesce and specify output_field
+    # Annotate: normalized price + has_price flag + popularity
     products = products.annotate(
-        price_for_sorting=Coalesce('details__pricing', 'details__list_price', output_field=DecimalField())
+        price_for_sorting=Coalesce(
+            'details__pricing', 'details__list_price', Value(0), output_field=DecimalField()
+        ),
+        has_price=Case(
+            When(Q(details__pricing__gt=0) | Q(details__list_price__gt=0), then=Value(1)),
+            default=Value(0),
+            output_field=IntegerField(),
+        ),
+        # Popularity as total quantity bought
+        popularity=Coalesce(Sum('orderitems__quantity'), Value(0))
     )
 
+    # Sorting
     if sort_by == 'price_asc':
-        products = products.order_by('price_for_sorting')
+        products = products.order_by('-has_price', 'price_for_sorting')
     elif sort_by == 'price_desc':
-        products = products.order_by('-price_for_sorting')
+        products = products.order_by('-has_price', '-price_for_sorting')
     elif sort_by == 'newest':
         products = products.order_by('-created_at')
     elif sort_by == 'popular':
-        pass  # no-op for now
+        products = products.order_by('-popularity')
 
     return render(request, 'front/products_page.html', {
         'products': products,
@@ -330,7 +433,7 @@ def logout_view(request):
         return redirect('/login/')
     return redirect('/profile/')
 
-@login_required
+@login_required(login_url='/login/')
 def add_to_cart(request):
     """
     Adds a product or store product to the user's cart.
@@ -373,9 +476,8 @@ def add_to_cart(request):
 
     return redirect('cart_page')
 
-@login_required
+@login_required(login_url='/login/')
 def cart_page(request):
-    # Get user cart
     customer = getattr(request.user, 'customer', None)
     if not customer:
         return render(request, 'front/cart.html', {'items': []})
@@ -385,12 +487,113 @@ def cart_page(request):
         return render(request, 'front/cart.html', {'items': []})
 
     items = cart.items.select_related('product', 'store_product')
-    total = sum(
-        (item.store_product.price if item.store_product else item.product.details.first().pricing) * item.quantity
-        for item in items
-    )
+    total = sum(item.subtotal for item in items)
 
     return render(request, 'front/cart.html', {
         'items': items,
         'total': total,
     })
+
+@login_required(login_url='/login/')
+def remove_cart_item(request, item_id):
+    item = get_object_or_404(CartItem, id=item_id, cart__customer=request.user.customer)
+    item.delete()
+    return redirect('cart_page')
+
+@login_required(login_url='/login/')
+def checkout_page(request):
+    customer = getattr(request.user, 'customer', None)
+    if not customer:
+        return redirect('cart_page')
+
+    cart = Cart.objects.filter(customer=customer).first()
+    if not cart or not cart.items.exists():
+        return redirect('cart_page')
+
+    # Prepare items with subtotal
+    items = []
+    total = 0
+    for item in cart.items.select_related('product', 'store_product'):
+        unit_price = item.store_product.price if item.store_product else item.product.details.first().pricing
+        subtotal = unit_price * item.quantity
+        total += subtotal
+        items.append({
+            'product': item.product,
+            'store_product': item.store_product,
+            'quantity': item.quantity,
+            'unit_price': unit_price,
+            'subtotal': subtotal
+        })
+
+    return render(request, 'front/checkout.html', {
+        'items': items,
+        'total': total
+    })
+
+@login_required(login_url='/login/')
+def place_order(request):
+    customer = getattr(request.user, 'customer', None)
+    if not customer:
+        return redirect('cart_page')
+
+    cart = Cart.objects.filter(customer=customer).first()
+    if not cart or not cart.items.exists():
+        return redirect('cart_page')
+
+    # Create the order
+    order = Order.objects.create(customer=customer)
+
+    # Create order items
+    for item in cart.items.select_related('product', 'store_product'):
+        unit_price = item.store_product.price if item.store_product else item.product.details.first().pricing
+        OrderItem.objects.create(
+            order=order,
+            product=item.product,
+            quantity=item.quantity,
+            unit_price=unit_price,
+        )
+
+    # Set initial order status as pending
+    OrderStatus.objects.create(order=order, status=OrderStatus.STATUS_PENDING)
+
+    # Clear the cart
+    cart.items.all().delete()
+
+    return redirect('orders')
+
+def about_page(request):
+    # Fake data
+    company_info = {
+        "name": "EcoStore",
+        "founded": 2021,
+        "employees": 48,
+        "headquarters": "Amsterdam, Netherlands",
+        "mission": "To provide sustainable and eco-friendly products to everyday consumers without compromising quality.",
+        "vision": "Become the leading online platform for environmentally responsible shopping in Europe.",
+        "values": [
+            "Sustainability in every decision",
+            "Customer-first approach",
+            "Innovation with purpose",
+            "Transparency and integrity",
+        ],
+        "team": [
+            {"name": "Ali Reza", "role": "CEO", "bio": "Passionate about green technology and sustainable business models."},
+            {"name": "Sara van Dijk", "role": "CTO", "bio": "Leading the development of modular and efficient e-commerce systems."},
+            {"name": "Hassan Alimi", "role": "COO", "bio": "Ensuring smooth operations and outstanding customer experience."},
+        ]
+    }
+    return render(request, "front/about.html", {"company": company_info})
+
+from django.shortcuts import render
+
+def contact_page(request):
+    # Fake contact info
+    contact_info = {
+        "company": "EcoStore",
+        "address": "Keizersgracht 123, 1015 CJ Amsterdam, Netherlands",
+        "phone": "+31 20 123 4567",
+        "email": "support@ecostore.nl",
+        "working_hours": "Mon - Fri: 09:00 - 18:00",
+        "map_embed": "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2436.123456789!2d4.8897!3d52.3740!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47c609d27e1f1234%3A0x123456789abcdef!2sKeizersgracht+123!5e0!3m2!1sen!2snl!4v1694000000000!5m2!1sen!2snl"
+    }
+    return render(request, "front/contact.html", {"contact": contact_info})

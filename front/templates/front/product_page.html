@@ -30,10 +30,17 @@
         {% else %}
           <!-- Fall back to pricing info -->
           {% if details.pricing|default:0 > 0 or details.list_price|default:0 > 0 %}
-            <button class="btn btn-success w-100 mt-3">Buy Now</button>
+            <button class="btn btn-success w-100 mt-3" data-bs-toggle="modal" data-bs-target="#amazonModal">
+              Buy Now
+            </button>
           {% else %}
             <button class="btn btn-secondary w-100 mt-3" disabled>Unavailable</button>
           {% endif %}
+        {% endif %}
+        {% if is_unavailable %}
+          <button id="refetch-btn" class="btn btn-warning w-100 mt-2">
+            Refetch from Amazon
+          </button>
         {% endif %}
       </div>
     </div>
@@ -114,27 +121,29 @@
                 </tr>
               </thead>
               <tbody>
-                <!-- Amazon row -->
-                <tr>
-                  <td><strong>Amazon</strong></td>
-                  <td>
-                    {% if details.pricing|default:0 > 0 %}
-                      ${{ details.pricing }}
-                    {% elif details.list_price|default:0 > 0 %}
-                      ${{ details.list_price }}
-                    {% else %}
-                      -
-                    {% endif %}
-                  </td>
-                  <td><span class="badge bg-success">In stock</span></td>
-                  <td>
-                    <input type="number" class="form-control form-control-sm quantity-input" value="1" min="1" style="width:70px;">
-                  </td>
-                  <td>
-                    <a href="{% url 'add_to_cart' %}?product_id={{ product.id }}&quantity=1"
-                      class="btn btn-sm btn-primary add-to-cart-btn">Buy</a>
-                  </td>
-                </tr>
+                <!-- Amazon row (only if it has a price) -->
+                {% if details.pricing|default:0 > 0 or details.list_price|default:0 > 0 %}
+                  <tr>
+                    <td><strong>Amazon</strong></td>
+                    <td>
+                      {% if details.pricing|default:0 > 0 %}
+                        ${{ details.pricing }}
+                      {% elif details.list_price|default:0 > 0 %}
+                        ${{ details.list_price }}
+                      {% else %}
+                        -
+                      {% endif %}
+                    </td>
+                    <td><span class="badge bg-success">In stock</span></td>
+                    <td>
+                      <input type="number" class="form-control form-control-sm quantity-input" value="1" min="1" style="width:70px;">
+                    </td>
+                    <td>
+                      <a href="{% url 'add_to_cart' %}?product_id={{ product.id }}&quantity=1"
+                        class="btn btn-sm btn-primary add-to-cart-btn">Buy</a>
+                    </td>
+                  </tr>
+                {% endif %}
 
                 <!-- Store products -->
                 {% if store_products %}
@@ -177,6 +186,42 @@
         </div>
       </div>
     </div>
+    
+    <!-- Amazon Modal (only if no store sells it) -->
+    <div class="modal fade" id="amazonModal" tabindex="-1" aria-labelledby="amazonModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="amazonModalLabel">Buy from Amazon</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body text-center">
+            <h4>{{ product.title }}</h4>
+
+            <p class="mt-2">
+              {% if details.pricing|default:0 > 0 %}
+                <span class="h5 text-danger">${{ details.pricing }}</span>
+              {% elif details.list_price|default:0 > 0 %}
+                <span class="h5 text-danger">${{ details.list_price }}</span>
+              {% else %}
+                <span class="text-danger">Unavailable</span>
+              {% endif %}
+            </p>
+
+            <div class="d-flex justify-content-center align-items-center gap-2 mt-3">
+              <label for="amazon-qty" class="fw-bold">Quantity:</label>
+              <input id="amazon-qty" type="number" class="form-control form-control-sm" value="1" min="1" style="width:80px;">
+            </div>
+
+            <div class="mt-4">
+              <a href="{% url 'add_to_cart' %}?product_id={{ product.id }}&quantity=1"
+                id="amazon-buy-btn"
+                class="btn btn-primary">Buy</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <script>
 document.querySelectorAll('.add-to-cart-btn').forEach((btn) => {
@@ -210,5 +255,33 @@ document.querySelectorAll('.add-to-cart-btn').forEach((btn) => {
   });
 
   if (thumbnails.length > 0) thumbnails[0].classList.add("border-primary", "border-2");
+
+  document.addEventListener('DOMContentLoaded', () => {
+  const refetchBtn = document.getElementById('refetch-btn');
+  if (refetchBtn) {
+    refetchBtn.addEventListener('click', () => {
+      refetchBtn.disabled = true;
+      refetchBtn.innerText = "Fetching...";
+
+      fetch("{% url 'refetch_product' product.id %}", {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}',
+          'Accept': 'application/json'
+        },
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          location.reload();
+        } else {
+          alert("Failed to fetch product: " + data.error);
+          refetchBtn.disabled = false;
+          refetchBtn.innerText = "Refetch from Amazon";
+        }
+      });
+    });
+  }
+});
 </script>
 {% endblock %}

@@ -1,272 +1,54 @@
-{% extends "front/base.html" %} {% block content %}
+{% extends "front/base.html" %} 
+{% load static %}
+{% block title %}ECO Store{% endblock %}
+
+{% block content %}
+<!-- Include Font Awesome for the shopping basket icon -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
 <style>
-  .search-in-navbar {
-    position: fixed;
-    top: 10px;
-    left: 25%;
-    width: 30%;
-  }
   .hero-section {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start; /* Align items to the top */
-    padding: 40px;
+    flex-direction: column; /* stack vertically */
+    align-items: center; /* center horizontally */
+    justify-content: center; /* center vertically */
+    min-height: 100vh; /* full viewport height */
+    text-align: center;
     background-color: #fff;
-    flex-wrap: wrap; /* Allow wrapping */
-  }
-  .hero-text {
-    max-width: 50%; /* Adjust the width as needed */
-  }
-  .hero-header {
-    font-size: 3.2em; /* Increase the font size */
-    line-height: 1.2; /* Optional: Adjust line height for better spacing */
-    margin-bottom: 0;
-  }
-  .hero-des {
-    margin-top: 5px;
-    margin-bottom: 10px;
-  }
-  .hero-buttons {
-    margin-top: 0;
-    margin-bottom: 0;
-  }
-  .highlight {
-    color: #feeb9d;
-    -webkit-text-stroke: 2px #fbbb00;
-  }
-  .hero-image {
-    width: 36%;
-    border-radius: 50%;
-  }
-  .hero-image img {
-    width: 100%;
-    border-radius: 10%;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Apply border radius to the image */
-  }
-  .top-sellers {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    margin-top: 20px;
-  }
-  .top-seller-item {
-    display: flex;
-    max-width: 250px;
-    padding: 10px;
-    margin: 10px;
-    align-items: center;
-    margin-bottom: 20px;
-    transition: all 1s linear;
-  }
-  .top-trends-item {
-    display: flex;
-    max-width: 500px;
-    flex-grow: 3;
-    padding: 10px;
-    margin: 10px;
-    align-items: center;
-    justify-content: center; /* Center horizontally */
-    text-align: center;
-    margin-bottom: 20px;
-    transition: all 1s linear;
-  }
-  .top-seller-item:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    border-radius: 20px;
-  }
-  .top-trends-item:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    border-radius: 20px;
-  }
-  .top-seller-item img {
-    border: 1px solid #cc0d39;
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    padding: 5px;
-    margin-right: 20px;
-  }
-  .top-seller-details {
-    display: flex;
-    flex-direction: column;
-  }
-  .top-trends-details {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    text-align: center;
-    align-items: center;
-    justify-content: center; /* Center vertically */
-  }
-  .top-seller-details p {
-    margin: 0;
-  }
-  .top-trends-details p {
-    margin: 0;
-    width: 100%;
-    text-align: center;
-  }
-  .top-seller-price {
-    color: #cc0d39;
-    font-weight: bold;
-  }
-  .top-trends-price {
-    color: #cc0d39;
-    font-weight: bold;
-    width: 100%;
-    text-align: center;
-  }
-  .top-seller-discount {
-    text-decoration: line-through;
-    color: grey;
-  }
-
-  .rotate-90 {
-    transform: rotate(270deg);
-    color: #feeb9d;
-    -webkit-text-stroke: 2px #fbbb00;
-  }
-  .new-content {
-    display: flex;
-    width: 100%;
-    background-color: orange;
     padding: 20px;
   }
 
-  .new-content img {
-    max-width: 300px;
-    margin-right: 20px;
-    border-radius: 10px;
-  }
-
-  .new-content .sidebar {
-    flex-grow: 1;
-    background-color: white;
-    padding: 10px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .new-content .sidebar img {
-    width: 100%;
-    max-width: 150px;
-    margin-bottom: 10px;
-    border-radius: 10px;
-  }
-  .slider-container {
-    display: flex;
-    background-color: #feeb9d;
-    padding: 50px;
-    border-radius: 20px;
-  }
-
-  .slider-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  .hero-title {
+    font-size: 3rem;
+    font-weight: bold;
     margin-bottom: 20px;
-  }
-
-  .slider-header h2 {
-    margin: 0;
-    font-size: 24px;
-  }
-
-  .discover-btn {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 80px;
-    height: 80px;
-    background-color: #fcf7e2;
-    border-radius: 50%;
-    text-decoration: none;
-    transition: all 0.6s ease-in;
-  }
-  .discover-btn:hover {
-    background-color: #cc0d39;
-  }
-  .discover-btn:hover svg {
-    fill: white;
-  }
-  .discover-btn svg {
-    fill: black;
-    transition: all 0.6s ease-in;
+    gap: 15px;
+    color: #28a745;
   }
 
-  .slider-image {
-    flex: 1;
-    margin-right: 20px;
+  .hero-title i {
+    font-size: 2.5rem;
   }
 
-  .slider-image img {
+  .hero-text {
     width: 100%;
-    border-radius: 10px;
+    max-width: 600px;
   }
 
-  .slider {
-    flex: 2;
-    position: relative;
-  }
-
-  .slides {
-    display: flex;
-    overflow: hidden;
-  }
-
-  .slide {
-    display: flex;
-    min-width: 100%;
-    transition: transform 0.5s ease-in-out;
-  }
-
-  .slide img {
-    width: 33.33%;
-    border-radius: 10px;
-    margin-right: 10px;
-  }
-
-  .navigation {
-    position: absolute;
-    top: 50%;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    transform: translateY(-50%);
-  }
-
-  .navigation button {
-    background-color: rgba(0, 0, 0, 0.5);
-    color: white;
-    border: none;
-    padding: 10px;
-    cursor: pointer;
-  }
-
-  .dots {
-    text-align: center;
-    margin-top: 10px;
-  }
-
-  .dot {
-    height: 15px;
-    width: 15px;
-    margin: 0 5px;
-    background-color: #bbb;
-    border-radius: 50%;
-    display: inline-block;
-    cursor: pointer;
-  }
-
-  .dot.active {
-    background-color: #717171;
+  .search-bar {
+    margin-top: 20px;
   }
 </style>
+
 <div class="hero-section">
+  <!-- Title + icon -->
+  <div class="hero-title">
+    <i class="fas fa-shopping-basket"></i>
+    ECO
+  </div>
+
   <div class="hero-text">
     <div class="search-bar">
       <form class="d-flex" id="searchForm">
@@ -286,223 +68,12 @@
     </div>
     <h1 class="hero-header">
       Search what
-      <span class="highlight"
-        >you want
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          xmlns:xlink="http://www.w3.org/1999/xlink"
-          version="1.1"
-          width="5rem"
-          height="5rem"
-          viewBox="0 0 256 256"
-          xml:space="preserve"
-          class="rotate-90"
-        >
-          <defs></defs>
-          <g
-            style="
-              stroke: none;
-              stroke-width: 0;
-              stroke-dasharray: none;
-              stroke-linecap: butt;
-              stroke-linejoin: miter;
-              stroke-miterlimit: 10;
-              background: #fbbb00;
-              fill: none;
-              fill-rule: nonzero;
-              opacity: 1;
-            "
-            transform="translate(1.4065934065934016 1.4065934065934016) scale(2 2)"
-          >
-            <path
-              d="M 88.8 61.679 l -14.931 -8.62 l -14.931 -8.62 c -1.599 -0.923 -3.599 0.231 -3.599 2.078 v 10.865 C 30.948 54.397 11.99 33.57 11.99 8.384 c 0 -0.985 -0.799 -1.784 -1.784 -1.784 H 1.784 C 0.799 6.601 0 7.399 0 8.384 c 0 31.804 24.321 58.03 55.341 61.068 v 11.545 c 0 1.847 1.999 3.001 3.599 2.078 l 14.931 -8.62 l 14.931 -8.62 C 90.4 64.911 90.4 62.602 88.8 61.679 z"
-              style="
-                stroke: none;
-                stroke-width: 1;
-                stroke-dasharray: none;
-                stroke-linecap: butt;
-                stroke-linejoin: miter;
-                stroke-miterlimit: 10;
-                fill: rgb(0, 0, 0);
-                fill-rule: nonzero;
-                opacity: 1;
-              "
-              transform=" matrix(1 0 0 1 0 0) "
-              stroke-linecap="round"
-            />
-          </g>
-        </svg>
-      </span>
+      <span class="highlight">you want</span>
     </h1>
-    <p class="hero-des">or enter the product link from amazon store</p>
-    <div class="hero-buttons">
-      <button class="btn btn-dark">ADD TO CART</button>
-      <button class="btn btn-light" style="border: 1px solid black">
-        VIEW DETAILS
-      </button>
-    </div>
-    <div class="top-sellers">
-      <div class="top-seller-item">
-        <img
-          src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png"
-          alt="Top Seller 1"
-        />
-        <div class="top-seller-details">
-          <p>Top Seller 1</p>
-          <p class="top-seller-price">
-            $15.00 <span class="top-seller-discount">$20.00</span>
-          </p>
-        </div>
-      </div>
-      <div class="top-seller-item">
-        <img
-          src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png"
-          alt="Top Seller 2"
-        />
-        <div class="top-seller-details">
-          <p>Top Seller 2</p>
-          <p class="top-seller-price">
-            $18.00 <span class="top-seller-discount">$25.00</span>
-          </p>
-        </div>
-      </div>
-      <div class="top-seller-item">
-        <img
-          src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png"
-          alt="Top Seller 2"
-        />
-        <div class="top-seller-details">
-          <p>Top Seller 3</p>
-          <p class="top-seller-price">
-            $18.00 <span class="top-seller-discount">$25.00</span>
-          </p>
-        </div>
-      </div>
-      <div class="top-seller-item">
-        <img
-          src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png"
-          alt="Top Seller 2"
-        />
-        <div class="top-seller-details">
-          <p>Top Seller 3</p>
-          <p class="top-seller-price">
-            $18.00 <span class="top-seller-discount">$25.00</span>
-          </p>
-        </div>
-      </div>
-      <div class="top-trends-item">
-        <!-- <img src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png" alt="Explore More"> -->
-        <div class="top-trends-details">
-          <p>Top Trends</p>
-          <p class="top-trends-price">explore more...</p>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="hero-image">
-    <img
-      src="https://pixio.dexignzone.com/django/demo/images/banner/banner-media3.png"
-      alt="Fashion Model"
-    />
+    <p class="hero-des">or enter the product link from Amazon store</p>
   </div>
 </div>
-<div class="slider-container">
-  <div class="slider-image">
-    <img
-      src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png"
-      alt="Main Image"
-    />
-  </div>
-  <div class="slider">
-    <div class="slider-header">
-      <h2>Discover Latest Collection</h2>
-      <a href="#" class="discover-btn">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="40"
-          height="40"
-          fill="currentColor"
-          class="bi bi-arrow-right"
-          viewBox="0 0 16 16"
-        >
-          <path
-            fill-rule="evenodd"
-            d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"
-          />
-        </svg>
-      </a>
-    </div>
-    <div class="slides">
-      <div class="slide">
-        <img
-          src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png"
-          alt="Image 1"
-        />
-        <img
-          src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png"
-          alt="Image 2"
-        />
-        <img
-          src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png"
-          alt="Image 3"
-        />
-      </div>
-      <div class="slide">
-        <img
-          src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png"
-          alt="Image 1"
-        />
-        <img
-          src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png"
-          alt="Image 2"
-        />
-        <img
-          src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png"
-          alt="Image 3"
-        />
-      </div>
-      <div class="slide">
-        <img
-          src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png"
-          alt="Image 1"
-        />
-        <img
-          src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png"
-          alt="Image 2"
-        />
-        <img
-          src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png"
-          alt="Image 3"
-        />
-      </div>
-      <div class="slide">
-        <img
-          src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png"
-          alt="Image 1"
-        />
-        <img
-          src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png"
-          alt="Image 2"
-        />
-        <img
-          src="https://pixio.dexignzone.com/django/demo/images/shop/small/pic2.png"
-          alt="Image 3"
-        />
-      </div>
-      <!-- Repeat for other slides -->
-    </div>
-    <div class="navigation">
-      <button class="prev">&#10094;</button>
-      <button class="next">&#10095;</button>
-    </div>
-    <div class="dots">
-      <span class="dot"></span>
-      <span class="dot"></span>
-      <span class="dot"></span>
-      <span class="dot"></span>
-    </div>
-  </div>
-</div>
+
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     var searchForm = document.getElementById("searchForm");

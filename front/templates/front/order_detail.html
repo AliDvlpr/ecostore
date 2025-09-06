@@ -1,0 +1,68 @@
+{% extends "front/base.html" %}
+{% block title %}Order Details{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Order #{{ order.id }}</h2>
+    <p>Date: {{ order.created_at|date:"Y-m-d H:i" }}</p>
+    <p>Status: {% if order.status.exists %}{{ order.status.last.get_status_display }}{% else %}Pending{% endif %}</p>
+
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Store</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.product.title }}</td>
+                <td>{% if item.store_product %}{{ item.store_product.store.name }}{% else %}Amazon{% endif %}</td>
+                <td>{{ item.quantity }}</td>
+                <td>${{ item.unit_price|floatformat:2 }}</td>
+                <td>${{ item.subtotal|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h4>Total: ${{ total|floatformat:2 }}</h4>
+
+    {% if order.status.exists %}
+        {% with last_status=order.status.last.status %}
+            {% if last_status == "P" or last_status == "A" %}
+                {% if wallet.amount >= total %}
+                <!-- User has enough money -->
+                <form method="post" action="{% url 'complete_payment' order.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">Complete Payment</button>
+                </form>
+                {% else %}
+                    <!-- Not enough money -->
+                    <a href="{% url 'wallet' %}" class="btn btn-warning">
+                        Add Money to Wallet
+                    </a>
+                {% endif %}
+            {% endif %}
+        {% endwith %}
+    {% else %}
+        <!-- If no status exists, maybe treat as Pending -->
+        {% if wallet.amount >= total %}
+        <form method="post" action="{% url 'complete_payment' order.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">Complete Payment</button>
+        </form>
+        {% else %}
+            <a href="{% url 'wallet' %}" class="btn btn-warning">
+                Add Money to Wallet
+            </a>
+        {% endif %}
+    {% endif %}
+    <br>
+    <a href="/orders" class="btn btn-secondary">Back to Orders</a>
+</div>
+{% endblock %}

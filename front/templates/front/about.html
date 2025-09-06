@@ -1,0 +1,40 @@
+{% extends "front/base.html" %}
+
+{% block title %}About Us{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>About {{ company.name }}</h1>
+    <p><strong>Founded:</strong> {{ company.founded }}</p>
+    <p><strong>Headquarters:</strong> {{ company.headquarters }}</p>
+    <p><strong>Employees:</strong> {{ company.employees }}</p>
+
+    <h3>Mission</h3>
+    <p>{{ company.mission }}</p>
+
+    <h3>Vision</h3>
+    <p>{{ company.vision }}</p>
+
+    <h3>Our Values</h3>
+    <ul>
+        {% for value in company.values %}
+        <li>{{ value }}</li>
+        {% endfor %}
+    </ul>
+
+    <h3>Meet Our Team</h3>
+    <div class="row">
+        {% for member in company.team %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ member.name }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{ member.role }}</h6>
+                    <p class="card-text">{{ member.bio }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

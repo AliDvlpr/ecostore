@@ -114,6 +114,15 @@ class CartItem(models.Model):
             return f"{self.product.title} from {self.store_product.store.name} x {self.quantity}"
         return f"{self.product.title} x {self.quantity}"
 
+    @property
+    def price(self):
+        if self.store_product:
+            return self.store_product.price
+        return self.product.details.first().pricing
+
+    @property
+    def subtotal(self):
+        return self.price * self.quantity
 
 class Order(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, verbose_name='مشتری')
@@ -154,6 +163,9 @@ class OrderStatus(models.Model):
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.PROTECT, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='orderitems')
+    store_product = models.ForeignKey(
+        'StoreProduct', null=True, blank=True, on_delete=models.PROTECT
+    )
     quantity = models.PositiveSmallIntegerField()
     unit_price = models.DecimalField(max_digits=12, decimal_places=0, default=0, verbose_name="قیمت")
 
